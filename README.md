@@ -1,6 +1,8 @@
 # TaskMate AI
 
-**Upload any project brief. Gemini AI creates a complete team plan in seconds.**
+ https://taskmate-ai.onrender.com
+
+Upload any project brief. Gemini AI creates a complete team plan in seconds.
 
 ## What it does
 - Upload a project brief (PDF, PNG, JPG)
