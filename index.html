@@ -511,10 +511,9 @@
 
 <script>
   // ============================================================
-  // 🔑 YOUR API KEY IS ALREADY INSERTED HERE
-  // Format: AQ. (Google's new standard)
+  // 🔑 YOUR WORKING API KEY - "AIzaSy" format (OLD but WORKS)
   // ============================================================
-  const GEMINI_API_KEY = "AQ.Ab8RN6JQr4u7lnzZTnJK443OL3yTTZdycyvTiq7r0-W9COJqhg";
+  const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
   const MODEL = "gemini-2.5-flash";
 
   // ============================================================
@@ -657,8 +656,7 @@
   function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
   // ============================================================
-  // GENERATE PLAN - FIXED FOR AQ. KEYS
-  // Uses x-goog-api-key header instead of URL param
+  // GENERATE PLAN - USING "AIzaSy" KEY (WORKS!)
   // ============================================================
   async function generatePlan() {
     hideError();
@@ -700,15 +698,12 @@
           "success_metrics": ["..."]
         }`;
 
-      // FIX: Using x-goog-api-key header instead of ?key= in URL
+      // Using ?key= in URL - WORKS with AIzaSy keys!
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_API_KEY  // <-- KEY GOES HERE, NOT IN URL
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
               parts: [
