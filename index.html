@@ -3,11 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f8faff" />
   <title>TaskMate AI — Smart Team Planning</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%234285f4'/%3E%3Cpath fill='white' d='M18 20h28v6H18zm0 12h20v6H18zm0 12h25v6H18z'/%3E%3C/svg%3E">
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- PDF libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  
   <style>
     :root {
       --blue: #0b57d0;
@@ -22,7 +29,6 @@
       --radius: 24px;
       --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
     [data-theme="dark"] {
       --canvas: #0a0a1a;
       --surface: #14142e;
@@ -31,9 +37,7 @@
       --line: #2a2a4a;
       --shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       margin: 0;
       background: var(--canvas);
@@ -42,9 +46,7 @@
       transition: background var(--transition), color var(--transition);
       min-height: 100vh;
     }
-
     .shell { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-
     header {
       padding: 20px 0;
       display: flex;
@@ -52,7 +54,6 @@
       justify-content: space-between;
       border-bottom: 1px solid var(--line);
     }
-
     .brand {
       display: flex;
       align-items: center;
@@ -61,7 +62,6 @@
       font-weight: 700;
       letter-spacing: -0.5px;
     }
-
     .brand-mark {
       width: 36px;
       height: 36px;
@@ -76,21 +76,18 @@
       background: white;
       border-radius: 8px;
     }
-
-    .header-actions { display: flex; align-items: center; gap: 12px; }
-
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .theme-toggle {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 99px;
-      padding: 8px 16px;
+      padding: 8px 14px;
       cursor: pointer;
       color: var(--ink);
       font-size: 14px;
       transition: var(--transition);
     }
     .theme-toggle:hover { background: var(--blue-light); border-color: var(--blue); }
-
     .hero {
       padding: 60px 0 40px;
       text-align: center;
@@ -107,12 +104,10 @@
       background-size: 400% 400%;
       animation: gradientShift 15s ease infinite;
     }
-
     @keyframes gradientShift {
       0%, 100% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
     }
-
     .hero h1 {
       font-size: clamp(36px, 5vw, 56px);
       letter-spacing: -2px;
@@ -129,7 +124,6 @@
       max-width: 560px;
       margin: 12px auto 0;
     }
-
     .glass-card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -144,7 +138,6 @@
       transform: translateY(-2px);
       box-shadow: 0 12px 48px rgba(11, 87, 208, 0.12);
     }
-
     .upload-zone {
       border: 2px dashed var(--line);
       border-radius: 16px;
@@ -156,9 +149,7 @@
     }
     .upload-zone:hover { border-color: var(--blue); background: var(--blue-light); transform: scale(1.01); }
     .upload-zone.drag { border-color: var(--blue); background: var(--blue-light); transform: scale(1.02); }
-
     .upload-icon { font-size: 48px; margin-bottom: 12px; }
-
     .file-info {
       display: none;
       background: var(--blue-light);
@@ -168,7 +159,6 @@
       align-items: center;
       justify-content: space-between;
     }
-
     .btn-primary {
       background: var(--blue);
       color: white;
@@ -187,7 +177,6 @@
       box-shadow: 0 8px 32px rgba(11, 87, 208, 0.4);
     }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
     .btn-secondary {
       background: var(--surface);
       color: var(--blue);
@@ -199,7 +188,6 @@
       transition: var(--transition);
     }
     .btn-secondary:hover { background: var(--blue-light); border-color: var(--blue); }
-
     .dashboard {
       display: none;
       margin-top: 32px;
@@ -209,7 +197,6 @@
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     .dash-header {
       display: flex;
       justify-content: space-between;
@@ -218,9 +205,7 @@
       gap: 12px;
       margin-bottom: 20px;
     }
-
     .dash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
     .summary-box {
       background: linear-gradient(135deg, var(--blue-light), var(--surface));
       padding: 24px;
@@ -228,14 +213,12 @@
       margin-bottom: 20px;
       border: 1px solid var(--line);
     }
-
     .metric-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 12px;
       margin-top: 16px;
     }
-
     .metric-item {
       background: var(--surface);
       padding: 12px 16px;
@@ -245,10 +228,8 @@
     }
     .metric-item .value { font-size: 24px; font-weight: 700; color: var(--blue); }
     .metric-item .label { font-size: 12px; color: var(--muted); }
-
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
-
     .panel {
       background: var(--surface);
       border-radius: 16px;
@@ -257,7 +238,6 @@
       box-shadow: var(--shadow);
     }
     .panel h3 { margin-bottom: 16px; font-size: 16px; }
-
     .task-item {
       display: grid;
       grid-template-columns: 30px 1fr auto;
@@ -268,7 +248,6 @@
       transition: var(--transition);
     }
     .task-item:hover { transform: translateX(4px); }
-
     .badge {
       font-size: 10px;
       font-weight: 700;
@@ -280,7 +259,6 @@
     .badge-high { background: #fce8e6; color: #b3261e; }
     .badge-medium { background: #fef7e0; color: #8d4e00; }
     .badge-low { background: #e6f4ea; color: #137333; }
-
     .role-item {
       border-left: 3px solid var(--blue);
       padding: 8px 0 8px 14px;
@@ -288,7 +266,6 @@
     }
     .role-item strong { font-size: 14px; }
     .role-item p { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
     .timeline-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -303,7 +280,6 @@
     .week-box h4 { font-size: 13px; color: var(--blue); margin-bottom: 6px; }
     .week-box ul { list-style: none; padding: 0; }
     .week-box li { font-size: 12px; padding: 4px 0; border-top: 1px solid var(--line); }
-
     .suggestion-box {
       background: linear-gradient(135deg, #e6f4ea, #d3e3fd);
       padding: 16px 20px;
@@ -317,29 +293,6 @@
     .suggestion-box h4 { font-size: 14px; margin-bottom: 6px; }
     .suggestion-box ul { list-style: none; padding: 0; font-size: 13px; }
     .suggestion-box li { padding: 4px 0; }
-
-    .history-section {
-      margin-top: 32px;
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 24px;
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-    }
-
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      margin-top: 8px;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-    .history-item:hover { background: var(--canvas); border-color: var(--blue); }
-
     .toast {
       position: fixed;
       bottom: 24px;
@@ -356,7 +309,6 @@
       z-index: 999;
     }
     .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
-
     .confetti {
       position: fixed;
       top: -14px;
@@ -369,7 +321,6 @@
     @keyframes confettiFall {
       to { transform: translate(var(--drift), 108vh) rotate(720deg); opacity: 0; }
     }
-
     footer {
       text-align: center;
       padding: 32px 0;
@@ -378,7 +329,6 @@
       border-top: 1px solid var(--line);
       margin-top: 48px;
     }
-
     .processing {
       display: none;
       text-align: center;
@@ -394,7 +344,6 @@
       animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .error {
       display: none;
       background: #fce8e6;
@@ -403,14 +352,197 @@
       border-radius: 12px;
       margin: 12px 0;
     }
+    
+    /* ===== LOGIN SCREEN ===== */
+    .login-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      background: var(--canvas);
+      padding: 24px;
+    }
+    .login-screen h1 { font-size: 48px; margin-bottom: 12px; }
+    .login-screen p { color: var(--muted); margin-bottom: 32px; font-size: 18px; }
+    .login-btn {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 99px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .login-btn:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(66,133,244,0.4); }
+    .login-logo { font-size: 64px; margin-bottom: 16px; }
+    
+    /* ===== USERNAME PROMPT ===== */
+    .username-prompt {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .username-prompt.active { display: flex; }
+    .username-modal {
+      background: var(--surface);
+      padding: 40px;
+      border-radius: 24px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .username-modal h2 { margin-bottom: 8px; }
+    .username-modal p { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .username-modal input {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 2px solid var(--line);
+      font-size: 16px;
+      background: var(--canvas);
+      color: var(--ink);
+    }
+    .username-modal input:focus { border-color: var(--blue); outline: none; }
+    .username-modal .btn-primary { width: 100%; margin-top: 12px; }
+    
+    /* ===== FRIENDS SECTION ===== */
+    .friend-section {
+      margin-top: 24px;
+      padding: 20px;
+      background: var(--surface);
+      border-radius: 16px;
+      border: 1px solid var(--line);
+    }
+    .friend-section h3 { margin-bottom: 12px; }
+    .friend-search {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .friend-search input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--canvas);
+      color: var(--ink);
+      min-width: 150px;
+    }
+    .friend-result {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .friend-result button {
+      padding: 6px 16px;
+      border-radius: 99px;
+      border: none;
+      background: var(--blue);
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .friend-result button.secondary { background: var(--line); color: var(--ink); }
+    .friend-list-item {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .friend-list-item small { color: var(--muted); }
+    .requests-badge {
+      background: #ea4335;
+      color: white;
+      border-radius: 99px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .nav-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .nav-bar button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 99px;
+      font-weight: 500;
+      transition: var(--transition);
+      font-size: 14px;
+    }
+    .nav-bar button:hover { background: var(--blue-light); color: var(--blue); }
+    .nav-bar button.active { background: var(--blue-light); color: var(--blue); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .user-name-display { font-weight: 600; color: var(--blue); }
   </style>
 </head>
 <body>
 
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-logo">🚀</div>
+  <h1>TaskMate AI</h1>
+  <p>Smart team planning powered by Google Gemini</p>
+  <button class="login-btn" onclick="loginWithGoogle()">
+    <svg width="24" height="24" viewBox="0 0 24 24"><path fill="white" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="white" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="white" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="white" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Sign in with Google
+  </button>
+  <p style="margin-top:24px;font-size:13px;color:var(--muted);">Secure · No password needed</p>
+</div>
+
+<!-- ===== USERNAME PROMPT ===== -->
+<div id="usernamePrompt" class="username-prompt">
+  <div class="username-modal">
+    <h2>👋 Welcome!</h2>
+    <p>Choose a unique username so your friends can find you</p>
+    <input type="text" id="usernameInput" placeholder="e.g. arnav_123" maxlength="20">
+    <div id="usernameError" style="color:#b3261e;font-size:13px;margin-top:8px;display:none;"></div>
+    <button class="btn-primary" onclick="setUsername()" style="width:100%;margin-top:12px;">Continue →</button>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="appScreen" style="display:none;">
+
 <header class="shell">
   <div class="brand"><span class="brand-mark"></span>TaskMate AI</div>
   <div class="header-actions">
-    <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+    <span id="userDisplay" style="font-size:13px;color:var(--muted);"></span>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+    <button class="theme-toggle" onclick="logout()" style="color:#ea4335;">🚪</button>
   </div>
 </header>
 
@@ -423,86 +555,123 @@
   </section>
 
   <div class="shell">
-    <div class="glass-card">
-      <div class="upload-zone" id="dropZone">
-        <div class="upload-icon">📄</div>
-        <strong>Drop your brief here</strong>
-        <p style="color:var(--muted);font-size:14px;margin-top:4px;">or click to browse</p>
-        <p style="font-size:12px;color:var(--muted);margin-top:4px;">PDF, PNG, JPG · Max 15 MB</p>
-        <button class="btn-secondary" style="margin-top:12px;" onclick="document.getElementById('fileInput').click()">Browse files</button>
-      </div>
-      <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg" hidden>
 
-      <div class="file-info" id="fileInfo">
-        <span id="fileName"></span>
-        <button onclick="clearFile()" style="background:none;border:0;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
-      </div>
+    <!-- ===== TAB NAV ===== -->
+    <div class="nav-bar">
+      <button class="active" onclick="switchTab('plans')">📋 Plans</button>
+      <button onclick="switchTab('friends')">👥 Friends <span id="requestsBadge" class="requests-badge" style="display:none;">0</span></button>
+    </div>
 
-      <div class="error" id="errorBox"></div>
+    <!-- ===== TAB 1: PLANS ===== -->
+    <div id="tabPlans" class="tab-content active">
 
-      <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
-        <button class="btn-primary" id="generateBtn" disabled>🚀 Generate plan</button>
-        <button class="btn-secondary" onclick="loadSample()">🔍 Preview sample</button>
-      </div>
-
-      <div class="processing" id="processing">
-        <div class="spinner"></div>
-        <h3 style="font-size:18px;">Building your plan</h3>
-        <p id="processText" style="color:var(--muted);">Reading your project brief…</p>
-        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
-          <span class="stage active">Analyze</span>
-          <span class="stage">Tasks</span>
-          <span class="stage">Roles</span>
-          <span class="stage">Timeline</span>
+      <div class="glass-card">
+        <div class="upload-zone" id="dropZone">
+          <div class="upload-icon">📄</div>
+          <strong>Drop your brief here</strong>
+          <p style="color:var(--muted);font-size:14px;margin-top:4px;">or click to browse</p>
+          <p style="font-size:12px;color:var(--muted);margin-top:4px;">PDF, PNG, JPG · Max 15 MB</p>
+          <button class="btn-secondary" style="margin-top:12px;" onclick="document.getElementById('fileInput').click()">Browse files</button>
         </div>
-        <style>.stage{font-size:12px;padding:6px 12px;border-radius:99px;background:var(--line);color:var(--muted);}.stage.active{background:var(--blue);color:white;}</style>
+        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg" hidden>
+
+        <div class="file-info" id="fileInfo">
+          <span id="fileName"></span>
+          <button onclick="clearFile()" style="background:none;border:0;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+
+        <div class="error" id="errorBox"></div>
+
+        <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn-primary" id="generateBtn" disabled>🚀 Generate plan</button>
+          <button class="btn-secondary" onclick="loadSample()">🔍 Preview sample</button>
+        </div>
+
+        <div class="processing" id="processing">
+          <div class="spinner"></div>
+          <h3 style="font-size:18px;">Building your plan</h3>
+          <p id="processText" style="color:var(--muted);">Reading your project brief…</p>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+            <span class="stage active">Analyze</span>
+            <span class="stage">Tasks</span>
+            <span class="stage">Roles</span>
+            <span class="stage">Timeline</span>
+          </div>
+          <style>.stage{font-size:12px;padding:6px 12px;border-radius:99px;background:var(--line);color:var(--muted);}.stage.active{background:var(--blue);color:white;}</style>
+        </div>
+      </div>
+
+      <div class="dashboard" id="dashboard">
+        <div class="dash-header">
+          <div>
+            <h2 style="font-size:26px;letter-spacing:-1px;">📋 Your Project Plan</h2>
+            <p style="color:var(--muted);font-size:14px;">Clear ownership. A manageable path to done.</p>
+          </div>
+          <div class="dash-actions">
+            <button class="btn-secondary" onclick="downloadPDF()">📄 PDF</button>
+            <button class="btn-secondary" onclick="downloadTXT()">📥 TXT</button>
+            <button class="btn-secondary" onclick="sharePlan()">🔗 Share</button>
+            <button class="btn-primary" onclick="resetAll()" style="padding:10px 20px;font-size:14px;">+ New</button>
+          </div>
+        </div>
+
+        <div class="summary-box" id="summaryBox">
+          <p id="projectSummary" style="font-size:17px;font-weight:500;"></p>
+          <div class="metric-grid" id="metricGrid"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="panel" id="tasksPanel"><h3>📌 Tasks</h3><div id="taskList"></div></div>
+          <div class="panel" id="rolesPanel"><h3>👥 Team Roles</h3><div id="roleList"></div></div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;" id="timelinePanel">
+          <h3>📅 Timeline</h3>
+          <div class="timeline-grid" id="timelineGrid"></div>
+        </div>
+
+        <div class="suggestion-box" id="suggestionBox">
+          <h4>💡 Smart Suggestions</h4>
+          <ul id="suggestionList"></ul>
+        </div>
+      </div>
+      
+      <!-- History -->
+      <div class="history-section" style="margin-top:24px;background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--line);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <h3 style="font-size:17px;">📜 My Plans</h3>
+        </div>
+        <div id="historyList"><p style="color:var(--muted);text-align:center;padding:20px 0;">No plans yet. Generate one to save it here.</p></div>
       </div>
     </div>
 
-    <div class="dashboard" id="dashboard">
-      <div class="dash-header">
-        <div>
-          <h2 style="font-size:26px;letter-spacing:-1px;">📋 Your Project Plan</h2>
-          <p style="color:var(--muted);font-size:14px;">Clear ownership. A manageable path to done.</p>
+    <!-- ===== TAB 2: FRIENDS ===== -->
+    <div id="tabFriends" class="tab-content">
+      <div class="friend-section">
+        <h3>🔍 Find Friends</h3>
+        <div class="friend-search">
+          <input type="text" id="friendSearchInput" placeholder="Enter username..." onkeyup="searchUsers(this.value)">
+          <button class="btn-secondary" onclick="searchUsers(document.getElementById('friendSearchInput').value)">Search</button>
         </div>
-        <div class="dash-actions">
-          <button class="btn-secondary" onclick="downloadPDF()">📄 PDF</button>
-          <button class="btn-secondary" onclick="downloadTXT()">📥 TXT</button>
-          <button class="btn-secondary" onclick="sharePlan()">🔗 Share</button>
-          <button class="btn-primary" onclick="resetAll()" style="padding:10px 20px;font-size:14px;">+ New</button>
-        </div>
+        <div id="searchResults"></div>
       </div>
 
-      <div class="summary-box" id="summaryBox">
-        <p id="projectSummary" style="font-size:17px;font-weight:500;"></p>
-        <div class="metric-grid" id="metricGrid"></div>
+      <div class="friend-section">
+        <h3>📨 Friend Requests</h3>
+        <div id="requestsList"><p style="color:var(--muted);">No pending requests</p></div>
       </div>
 
-      <div class="grid-2">
-        <div class="panel" id="tasksPanel"><h3>📌 Tasks</h3><div id="taskList"></div></div>
-        <div class="panel" id="rolesPanel"><h3>👥 Team Roles</h3><div id="roleList"></div></div>
+      <div class="friend-section">
+        <h3>👥 My Friends</h3>
+        <div id="friendsList"><p style="color:var(--muted);">No friends yet. Add some!</p></div>
       </div>
 
-      <div class="panel" style="margin-top:20px;" id="timelinePanel">
-        <h3>📅 Timeline</h3>
-        <div class="timeline-grid" id="timelineGrid"></div>
-      </div>
-
-      <div class="suggestion-box" id="suggestionBox">
-        <h4>💡 Smart Suggestions</h4>
-        <ul id="suggestionList"></ul>
+      <div class="friend-section">
+        <h3>📋 Friends' Plans</h3>
+        <div id="friendsPlans"><p style="color:var(--muted);">Friend's plans will appear here</p></div>
       </div>
     </div>
 
-    <section class="history-section">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <h3 style="font-size:17px;">📜 History</h3>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-secondary" onclick="clearHistory()" style="padding:6px 14px;font-size:12px;">Clear</button>
-        </div>
-      </div>
-      <div id="historyList"><p style="color:var(--muted);text-align:center;padding:20px 0;">No history yet. Generate a plan to save it here.</p></div>
-    </section>
   </div>
 </main>
 
@@ -510,458 +679,827 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ============================================================
-  // 🔑 YOUR WORKING API KEY
-  // ============================================================
-  const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
-  const MODEL = "gemini-3.6-flash";  // <-- FIXED: Using available model
+// ================================================================
+// 🔥 FIREBASE CONFIG - YOUR ACTUAL CONFIG
+// ================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDZe2tFNX0vySrQ4LMezq-gM-JtOlhXD0s",
+  authDomain: "taskmate-ai-e1cf4.firebaseapp.com",
+  projectId: "taskmate-ai-e1cf4",
+  storageBucket: "taskmate-ai-e1cf4.firebasestorage.app",
+  messagingSenderId: "182898886711",
+  appId: "1:182898886711:web:23ce065338cb50969697b2"
+};
 
-  // ============================================================
-  // STATE
-  // ============================================================
-  let selectedFile = null;
-  let currentPlan = null;
-  let currentFileName = null;
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  // ============================================================
-  // DOM HELPERS
-  // ============================================================
-  const $ = s => document.querySelector(s);
-  const $$ = s => document.querySelectorAll(s);
+// ================================================================
+// 🔑 GEMINI API KEY
+// ================================================================
+const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
+const MODEL = "gemini-3.5-flash";
 
-  function toast(msg) {
-    const t = $('#toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+// ================================================================
+// STATE
+// ================================================================
+let selectedFile = null;
+let currentPlan = null;
+let currentFileName = null;
+let currentUser = null;
+let currentUsername = null;
+
+// ================================================================
+// DOM HELPERS
+// ================================================================
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showError(msg) {
+  const e = $('#errorBox');
+  e.textContent = msg;
+  e.style.display = 'block';
+}
+function hideError() { $('#errorBox').style.display = 'none'; }
+
+function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
+
+// ================================================================
+// AUTH - LOGIN / LOGOUT
+// ================================================================
+function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    toast('❌ Login failed: ' + err.message);
+  });
+}
+
+function logout() {
+  auth.signOut().then(() => {
+    toast('👋 Logged out');
+  });
+}
+
+// ================================================================
+// AUTH STATE CHANGE
+// ================================================================
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    $('#userDisplay').textContent = '👤 ' + (user.displayName || user.email);
+    checkUsername(user);
+    loadUserPlans(user.uid);
+    loadRequests(user.uid);
+    loadFriends(user.uid);
+  } else {
+    currentUser = null;
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appScreen').style.display = 'none';
   }
+});
 
-  function showError(msg) {
-    const e = $('#errorBox');
-    e.textContent = msg;
-    e.style.display = 'block';
-  }
-  function hideError() { $('#errorBox').style.display = 'none'; }
-
-  // ============================================================
-  // FILE HANDLING
-  // ============================================================
-  function setFile(file) {
-    if (!file) return;
-    const accepted = ['application/pdf', 'image/png', 'image/jpeg'];
-    if (!accepted.includes(file.type)) {
-      showError('Please upload PDF, PNG, or JPG');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      showError('File must be under 15 MB');
-      return;
-    }
-    selectedFile = file;
-    currentFileName = file.name;
-    $('#fileName').textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
-    $('#fileInfo').style.display = 'flex';
-    $('#dropZone').style.display = 'none';
-    $('#generateBtn').disabled = false;
-    hideError();
-  }
-
-  function clearFile() {
-    selectedFile = null;
-    $('#fileInput').value = '';
-    $('#fileInfo').style.display = 'none';
-    $('#dropZone').style.display = 'block';
-    $('#generateBtn').disabled = true;
-  }
-
-  const dz = $('#dropZone');
-  dz.addEventListener('click', () => $('#fileInput').click());
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); setFile(e.dataTransfer.files[0]); });
-  $('#fileInput').addEventListener('change', e => setFile(e.target.files[0]));
-
-  // ============================================================
-  // LOADING
-  // ============================================================
-  function setLoading(on) {
-    $('#processing').style.display = on ? 'block' : 'none';
-    $('#generateBtn').style.display = on ? 'none' : 'inline-block';
-    if (on) {
-      const texts = ['Reading your project brief…', 'Finding milestones…', 'Matching tasks to roles…', 'Building timeline…'];
-      let idx = 0;
-      const stages = $$('.stage');
-      clearInterval(window._stageTimer);
-      window._stageTimer = setInterval(() => {
-        idx = (idx + 1) % texts.length;
-        $('#processText').textContent = texts[idx];
-        stages.forEach((s, i) => s.classList.toggle('active', i <= idx));
-      }, 900);
+// ================================================================
+// USERNAME
+// ================================================================
+function checkUsername(user) {
+  db.collection('users').doc(user.uid).get().then(doc => {
+    if (doc.exists && doc.data().username) {
+      currentUsername = doc.data().username;
+      $('#userDisplay').textContent = '👤 @' + currentUsername;
     } else {
-      clearInterval(window._stageTimer);
+      document.getElementById('usernamePrompt').classList.add('active');
     }
+  });
+}
+
+function setUsername() {
+  const input = document.getElementById('usernameInput');
+  const username = input.value.trim().toLowerCase();
+  const errorEl = document.getElementById('usernameError');
+  
+  if (!username) {
+    errorEl.textContent = 'Please enter a username';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (username.length < 3) {
+    errorEl.textContent = 'Username must be at least 3 characters';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    errorEl.textContent = 'Only letters, numbers, and underscores allowed';
+    errorEl.style.display = 'block';
+    return;
   }
 
-  // ============================================================
-  // RENDER PLAN
-  // ============================================================
-  function render(data) {
-    currentPlan = data;
-    const tasks = data.tasks || [];
-    const roles = data.team_roles || [];
-    const tl = data.timeline || {};
-
-    $('#projectSummary').textContent = data.project_summary || 'Your project plan is ready.';
-    $('#metricGrid').innerHTML = `
-      <div class="metric-item"><div class="value">${tasks.length}</div><div class="label">Tasks</div></div>
-      <div class="metric-item"><div class="value">${roles.length}</div><div class="label">Roles</div></div>
-      <div class="metric-item"><div class="value">${tasks.reduce((s, t) => s + (Number(t.estimated_hours) || 0), 0)}h</div><div class="label">Est. Hours</div></div>
-      <div class="metric-item"><div class="value">${Object.keys(tl).length}</div><div class="label">Weeks</div></div>
-    `;
-
-    $('#taskList').innerHTML = tasks.map((t, i) => `
-      <div class="task-item">
-        <span style="font-weight:600;color:var(--muted);">${i+1}</span>
-        <div><strong>${escape(t.name)}</strong><br><small style="color:var(--muted);">${t.estimated_hours || '?'} hours</small></div>
-        <span class="badge badge-${t.priority || 'medium'}">${t.priority || 'medium'}</span>
-      </div>
-    `).join('') || '<p style="color:var(--muted);">No tasks returned.</p>';
-
-    $('#roleList').innerHTML = roles.map(r => `
-      <div class="role-item"><strong>${escape(r.role)}</strong><p>${(r.tasks || []).map(escape).join(' · ') || 'Tasks to be assigned'}</p></div>
-    `).join('') || '<p style="color:var(--muted);">No roles returned.</p>';
-
-    $('#timelineGrid').innerHTML = Object.entries(tl).map(([week, items]) => `
-      <div class="week-box"><h4>${escape(week.replace(/([A-Z])/g, ' $1'))}</h4><ul>${(items || []).map(i => `<li>${escape(i)}</li>`).join('')}</ul></div>
-    `).join('') || '<p style="color:var(--muted);">No timeline returned.</p>';
-
-    const suggestions = [];
-    if (data.budget) suggestions.push(`💰 Budget: ${data.budget}`);
-    if (data.risks && data.risks.length) {
-      suggestions.push(`⚠️ Risks: ${data.risks.slice(0, 3).map(r => r.risk).join(', ')}`);
-    }
-    if (data.success_metrics && data.success_metrics.length) {
-      suggestions.push(`🎯 Success Metrics: ${data.success_metrics.join(', ')}`);
-    }
-    if (suggestions.length === 0) suggestions.push('✨ Add more detail to your brief for smarter suggestions!');
-    $('#suggestionList').innerHTML = suggestions.map(s => `<li>${s}</li>`).join('');
-
-    $('#dashboard').style.display = 'block';
-    setTimeout(() => $('#dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
-    celebrate();
-    addToHistory(currentFileName || 'Untitled', data);
-  }
-
-  function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
-
-  // ============================================================
-  // GENERATE PLAN
-  // ============================================================
-  async function generatePlan() {
-    hideError();
-    if (!GEMINI_API_KEY) {
-      showError('Please set your Gemini API key in the code.');
+  errorEl.style.display = 'none';
+  
+  // Check if username is taken
+  db.collection('users').where('username', '==', username).get().then(snapshot => {
+    if (!snapshot.empty) {
+      errorEl.textContent = 'Username already taken. Try another.';
+      errorEl.style.display = 'block';
       return;
     }
-    if (!selectedFile) {
-      showError('Please upload a project brief.');
-      return;
-    }
+    
+    // Save username
+    db.collection('users').doc(currentUser.uid).set({
+      username: username,
+      email: currentUser.email,
+      displayName: currentUser.displayName || username,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      currentUsername = username;
+      $('#userDisplay').textContent = '👤 @' + username;
+      document.getElementById('usernamePrompt').classList.remove('active');
+      toast('✅ Username set: @' + username);
+      loadUserPlans(currentUser.uid);
+    }).catch(err => {
+      toast('❌ Error: ' + err.message);
+    });
+  });
+}
 
-    setLoading(true);
-    try {
-      const base64 = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result.split(',')[1]);
-        r.onerror = reject;
-        r.readAsDataURL(selectedFile);
+// ================================================================
+// LOAD USER'S PLANS FROM FIRESTORE
+// ================================================================
+function loadUserPlans(uid) {
+  db.collection('users').doc(uid).collection('plans')
+    .orderBy('timestamp', 'desc')
+    .limit(20)
+    .get()
+    .then(snapshot => {
+      const list = document.getElementById('historyList');
+      if (snapshot.empty) {
+        list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px 0;">No plans yet. Generate one to save it here.</p>';
+        return;
+      }
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tasks = data.data?.tasks?.length || 0;
+        const name = data.fileName || 'Untitled';
+        const time = data.timestamp?.toDate?.() ? data.timestamp.toDate().toLocaleString() : 'Recently';
+        html += `<div class="history-item" onclick="loadPlanFromFirestore('${doc.id}')" style="padding:12px 16px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>📄 ${escape(name)}</strong> <span style="font-size:12px;color:var(--muted);">${tasks} tasks</span></div>
+          <div style="font-size:12px;color:var(--muted);">${time}</div>
+        </div>`;
       });
+      list.innerHTML = html;
+    });
+}
 
-      const prompt = `Analyze this project brief. Return a COMPLETE team project plan with:
-        - Project summary (1 sentence)
-        - 5-10 tasks with: name, estimated_hours (number), priority (high/medium/low)
-        - 3-5 team roles with: role name, tasks (array of task names)
-        - 4-week timeline with weekly breakdown
-        - Budget estimate: "low" / "medium" / "high"
-        - Key risks: array of { risk, mitigation }
-        - Success metrics: array of strings
+function loadPlanFromFirestore(docId) {
+  const uid = currentUser.uid;
+  db.collection('users').doc(uid).collection('plans').doc(docId).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data().data;
+      if (data) {
+        render(data);
+        toast('📂 Loaded from saved plans');
+      }
+    }
+  });
+}
 
-        Return ONLY valid JSON with this exact structure:
-        {
-          "project_summary": "...",
-          "tasks": [{"name":"...","estimated_hours":2,"priority":"high"}],
-          "team_roles": [{"role":"...","tasks":["task1","task2"]}],
-          "timeline": {"week1":["Task A"],"week2":["Task B"]},
-          "budget": "medium",
-          "risks": [{"risk":"...","mitigation":"..."}],
-          "success_metrics": ["..."]
-        }`;
+// ================================================================
+// SAVE PLAN TO FIRESTORE
+// ================================================================
+function savePlanToFirestore(fileName, data) {
+  if (!currentUser) return;
+  db.collection('users').doc(currentUser.uid).collection('plans').add({
+    fileName: fileName,
+    data: data,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    loadUserPlans(currentUser.uid);
+  }).catch(err => {
+    console.error('Save error:', err);
+  });
+}
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType: selectedFile.type, data: base64 } }
-              ]
-            }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
-          })
+// ================================================================
+// FRIEND SYSTEM
+// ================================================================
+function searchUsers(query) {
+  const results = document.getElementById('searchResults');
+  if (!query || query.length < 2) {
+    results.innerHTML = '<p style="color:var(--muted);font-size:14px;">Type at least 2 characters to search</p>';
+    return;
+  }
+  
+  db.collection('users')
+    .where('username', '>=', query.toLowerCase())
+    .where('username', '<=', query.toLowerCase() + '\uf8ff')
+    .limit(10)
+    .get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        results.innerHTML = '<p style="color:var(--muted);">No users found</p>';
+        return;
+      }
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const uid = doc.id;
+        if (uid === currentUser.uid) {
+          html += `<div class="friend-result"><span>${escape(data.username)} (you)</span></div>`;
+          return;
         }
-      );
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message || 'API error');
-
-      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('');
-      if (!text) throw new Error('No response from Gemini');
-
-      const clean = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-      const parsed = JSON.parse(clean);
-      render(parsed);
-      toast('✅ Plan generated successfully!');
-    } catch (err) {
-      showError(err.message || 'Something went wrong. Try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  $('#generateBtn').addEventListener('click', generatePlan);
-
-  // ============================================================
-  // SAMPLE PLAN
-  // ============================================================
-  function loadSample() {
-    const sample = {
-      project_summary: "Create a sustainability awareness campaign for college campus.",
-      tasks: [
-        { name: "Research sustainability initiatives", estimated_hours: 4, priority: "high" },
-        { name: "Design campaign posters", estimated_hours: 6, priority: "high" },
-        { name: "Create social media content", estimated_hours: 5, priority: "medium" },
-        { name: "Plan workshop events", estimated_hours: 3, priority: "medium" },
-        { name: "Final presentation", estimated_hours: 2, priority: "low" }
-      ],
-      team_roles: [
-        { role: "Project Lead", tasks: ["Research sustainability initiatives", "Final presentation"] },
-        { role: "Designer", tasks: ["Design campaign posters", "Create social media content"] },
-        { role: "Event Coordinator", tasks: ["Plan workshop events"] }
-      ],
-      timeline: {
-        week1: ["Research sustainability initiatives", "Design campaign posters"],
-        week2: ["Create social media content", "Plan workshop events"],
-        week3: ["Final presentation"]
-      },
-      budget: "low",
-      risks: [{ risk: "Low engagement", mitigation: "Run social media contests" }],
-      success_metrics: ["100 students reached", "10 workshop attendees"]
-    };
-    currentFileName = 'sample-brief';
-    render(sample);
-    toast('🔍 Sample plan loaded');
-  }
-
-  // ============================================================
-  // PDF EXPORT
-  // ============================================================
-  function downloadPDF() {
-    if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'pt', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(24);
-    doc.text('📋 Project Plan', 40, 50);
-    doc.setFontSize(14);
-    doc.text(currentPlan.project_summary || 'Project summary', 40, 80, { maxWidth: pageWidth - 80 });
-
-    const tasks = currentPlan.tasks || [];
-    const roles = currentPlan.team_roles || [];
-    const tl = currentPlan.timeline || {};
-
-    doc.autoTable({
-      head: [['#', 'Task', 'Hours', 'Priority']],
-      body: tasks.map((t, i) => [i + 1, t.name, t.estimated_hours || '?', t.priority || 'medium']),
-      startY: 120,
+        // Check if already friends
+        db.collection('users').doc(currentUser.uid).collection('friends').doc(uid).get().then(friendDoc => {
+          const isFriend = friendDoc.exists;
+          const btn = document.getElementById('friend_btn_' + uid);
+          if (btn) {
+            if (isFriend) {
+              btn.textContent = '✅ Friends';
+              btn.disabled = true;
+            }
+          }
+        });
+        html += `<div class="friend-result" id="result_${uid}">
+          <span>@${escape(data.username)}</span>
+          <button id="friend_btn_${uid}" onclick="sendFriendRequest('${uid}')">➕ Add Friend</button>
+        </div>`;
+      });
+      results.innerHTML = html;
+      
+      // Check friend status for each result
+      snapshot.forEach(doc => {
+        const uid = doc.id;
+        if (uid !== currentUser.uid) {
+          db.collection('users').doc(currentUser.uid).collection('friends').doc(uid).get().then(friendDoc => {
+            const btn = document.getElementById('friend_btn_' + uid);
+            if (btn && friendDoc.exists) {
+              btn.textContent = '✅ Friends';
+              btn.disabled = true;
+            }
+          });
+          // Check if request already sent
+          db.collection('friendRequests')
+            .where('from', '==', currentUser.uid)
+            .where('to', '==', uid)
+            .where('status', '==', 'pending')
+            .get()
+            .then(snap => {
+              const btn = document.getElementById('friend_btn_' + uid);
+              if (btn && !snap.empty) {
+                btn.textContent = '⏳ Pending';
+                btn.disabled = true;
+              }
+            });
+        }
+      });
     });
+}
 
-    let y = doc.lastAutoTable.finalY + 20;
-    doc.setFontSize(16);
-    doc.text('👥 Team Roles', 40, y);
-    y += 20;
-    roles.forEach(r => {
-      doc.setFontSize(12);
-      doc.text(`• ${r.role}: ${(r.tasks || []).join(', ')}`, 40, y);
-      y += 20;
+function sendFriendRequest(toUid) {
+  db.collection('friendRequests').add({
+    from: currentUser.uid,
+    to: toUid,
+    fromUsername: currentUsername || 'Unknown',
+    status: 'pending',
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    toast('✅ Friend request sent!');
+    const btn = document.getElementById('friend_btn_' + toUid);
+    if (btn) { btn.textContent = '⏳ Pending'; btn.disabled = true; }
+  });
+}
+
+function loadRequests(uid) {
+  db.collection('friendRequests')
+    .where('to', '==', uid)
+    .where('status', '==', 'pending')
+    .onSnapshot(snapshot => {
+      const list = document.getElementById('requestsList');
+      const badge = document.getElementById('requestsBadge');
+      if (snapshot.empty) {
+        list.innerHTML = '<p style="color:var(--muted);">No pending requests</p>';
+        badge.style.display = 'none';
+        return;
+      }
+      badge.textContent = snapshot.size;
+      badge.style.display = 'inline';
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        html += `<div class="friend-result">
+          <span>@${escape(data.fromUsername || 'Unknown')}</span>
+          <div>
+            <button onclick="acceptRequest('${doc.id}','${data.from}')">✅ Accept</button>
+            <button class="secondary" onclick="rejectRequest('${doc.id}')">❌</button>
+          </div>
+        </div>`;
+      });
+      list.innerHTML = html;
     });
+}
 
-    y += 10;
-    doc.setFontSize(16);
-    doc.text('📅 Timeline', 40, y);
-    y += 20;
-    Object.entries(tl).forEach(([week, items]) => {
-      doc.setFontSize(12);
-      doc.text(`${week}: ${(items || []).join(', ')}`, 40, y);
-      y += 16;
-    });
+function acceptRequest(requestId, fromUid) {
+  const uid = currentUser.uid;
+  // Add to friends
+  db.collection('users').doc(uid).collection('friends').doc(fromUid).set({
+    uid: fromUid,
+    added: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  db.collection('users').doc(fromUid).collection('friends').doc(uid).set({
+    uid: uid,
+    added: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  // Delete request
+  db.collection('friendRequests').doc(requestId).delete().then(() => {
+    toast('✅ Friend added!');
+    loadFriends(uid);
+  });
+}
 
-    doc.save('project-plan.pdf');
-    toast('📄 PDF downloaded');
-  }
+function rejectRequest(requestId) {
+  db.collection('friendRequests').doc(requestId).delete().then(() => {
+    toast('❌ Request declined');
+  });
+}
 
-  // ============================================================
-  // TXT EXPORT
-  // ============================================================
-  function downloadTXT() {
-    if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
-    const data = currentPlan;
-    let txt = `📋 PROJECT PLAN\n${'='.repeat(60)}\n\n`;
-    txt += `📌 Summary: ${data.project_summary || 'N/A'}\n\n`;
-    txt += `📌 TASKS:\n`;
-    (data.tasks || []).forEach((t, i) => {
-      txt += `  ${i+1}. ${t.name} | Hours: ${t.estimated_hours || '?'} | Priority: ${t.priority || 'medium'}\n`;
-    });
-    txt += `\n👥 TEAM ROLES:\n`;
-    (data.team_roles || []).forEach(r => {
-      txt += `  ${r.role}: ${(r.tasks || []).join(', ')}\n`;
-    });
-    txt += `\n📅 TIMELINE:\n`;
-    Object.entries(data.timeline || {}).forEach(([week, items]) => {
-      txt += `  ${week}:\n`;
-      (items || []).forEach(i => txt += `    - ${i}\n`);
-    });
-    if (data.budget) txt += `\n💰 Budget: ${data.budget}\n`;
-    if (data.risks && data.risks.length) {
-      txt += `\n⚠️ Risks:\n`;
-      data.risks.forEach(r => txt += `  - ${r.risk}: ${r.mitigation || ''}\n`);
-    }
-    if (data.success_metrics && data.success_metrics.length) {
-      txt += `\n🎯 Success Metrics:\n`;
-      data.success_metrics.forEach(m => txt += `  - ${m}\n`);
-    }
-    const blob = new Blob([txt], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${currentFileName || 'plan'}.txt`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast('📥 TXT downloaded');
-  }
-
-  // ============================================================
-  // SHAREABLE LINK
-  // ============================================================
-  function sharePlan() {
-    if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
-    const encoded = btoa(JSON.stringify(currentPlan));
-    const url = `${window.location.origin}${window.location.pathname}?plan=${encoded}`;
-    navigator.clipboard.writeText(url).then(() => toast('🔗 Shareable link copied!'));
-  }
-
-  // ============================================================
-  // HISTORY
-  // ============================================================
-  function getHistory() {
-    try { return JSON.parse(localStorage.getItem('taskmate_history')) || []; } catch { return []; }
-  }
-  function saveHistory(entry) {
-    const history = getHistory();
-    history.unshift({ ...entry, timestamp: new Date().toISOString() });
-    if (history.length > 50) history.pop();
-    localStorage.setItem('taskmate_history', JSON.stringify(history));
-    renderHistory();
-  }
-  function addToHistory(fileName, data) {
-    saveHistory({ fileName, data, tasks: (data.tasks || []).length });
-  }
-  function renderHistory() {
-    const list = $('#historyList');
-    const history = getHistory();
-    if (!history.length) {
-      list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px 0;">No history yet. Generate a plan to save it here.</p>';
+function loadFriends(uid) {
+  db.collection('users').doc(uid).collection('friends').onSnapshot(snapshot => {
+    const list = document.getElementById('friendsList');
+    if (snapshot.empty) {
+      list.innerHTML = '<p style="color:var(--muted);">No friends yet. Add some!</p>';
       return;
     }
-    list.innerHTML = history.map((h, i) => `
-      <div class="history-item" onclick="loadHistory(${i})">
-        <div><strong>📄 ${escape(h.fileName || 'Untitled')}</strong> <span style="font-size:12px;color:var(--muted);">${h.tasks || 0} tasks</span></div>
-        <div style="font-size:12px;color:var(--muted);">${new Date(h.timestamp).toLocaleString()}</div>
-      </div>
-    `).join('');
-  }
-  function loadHistory(idx) {
-    const history = getHistory();
-    if (history[idx]) {
-      render(history[idx].data);
-      toast('📂 Loaded from history');
+    let html = '';
+    snapshot.forEach(doc => {
+      const friendUid = doc.data().uid;
+      db.collection('users').doc(friendUid).get().then(userDoc => {
+        if (userDoc.exists) {
+          const username = userDoc.data().username || friendUid;
+          const existing = document.getElementById('friend_item_' + friendUid);
+          if (!existing) {
+            const div = document.createElement('div');
+            div.id = 'friend_item_' + friendUid;
+            div.className = 'friend-list-item';
+            div.innerHTML = `<span>@${escape(username)}</span><small>Friend</small>`;
+            list.appendChild(div);
+          }
+        }
+      });
+    });
+    // Load friends' plans
+    loadFriendsPlans(uid);
+  });
+}
+
+function loadFriendsPlans(uid) {
+  const container = document.getElementById('friendsPlans');
+  container.innerHTML = '<p style="color:var(--muted);">Loading friends\' plans...</p>';
+  
+  db.collection('users').doc(uid).collection('friends').get().then(snapshot => {
+    if (snapshot.empty) {
+      container.innerHTML = '<p style="color:var(--muted);">No friends yet. Add some to see their plans!</p>';
+      return;
+    }
+    let allPlans = [];
+    let completed = 0;
+    const total = snapshot.size;
+    
+    snapshot.forEach(doc => {
+      const friendUid = doc.data().uid;
+      db.collection('users').doc(friendUid).collection('plans')
+        .orderBy('timestamp', 'desc')
+        .limit(3)
+        .get()
+        .then(plans => {
+          plans.forEach(plan => {
+            const data = plan.data();
+            allPlans.push({
+              username: 'friend',
+              fileName: data.fileName || 'Untitled',
+              tasks: data.data?.tasks?.length || 0,
+              timestamp: data.timestamp
+            });
+          });
+          completed++;
+          if (completed === total) {
+            if (allPlans.length === 0) {
+              container.innerHTML = '<p style="color:var(--muted);">No plans shared by friends yet</p>';
+              return;
+            }
+            // Get usernames for each plan
+            let html = '';
+            allPlans.forEach((p, i) => {
+              html += `<div class="history-item" style="padding:10px 14px;border:1px solid var(--line);border-radius:12px;margin-top:6px;">
+                <div><strong>📄 ${escape(p.fileName)}</strong> <span style="font-size:12px;color:var(--muted);">${p.tasks} tasks</span></div>
+                <div style="font-size:11px;color:var(--muted);">Friend</div>
+              </div>`;
+            });
+            container.innerHTML = html;
+          }
+        });
+    });
+  });
+}
+
+// ================================================================
+// TAB SWITCHING
+// ================================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-bar button').forEach(el => el.classList.remove('active'));
+  
+  if (tab === 'plans') {
+    document.getElementById('tabPlans').classList.add('active');
+    document.querySelector('.nav-bar button:first-child').classList.add('active');
+  } else if (tab === 'friends') {
+    document.getElementById('tabFriends').classList.add('active');
+    document.querySelector('.nav-bar button:last-child').classList.add('active');
+    if (currentUser) {
+      loadRequests(currentUser.uid);
+      loadFriends(currentUser.uid);
     }
   }
-  function clearHistory() {
-    if (confirm('Clear all history?')) {
-      localStorage.removeItem('taskmate_history');
-      renderHistory();
-      toast('🗑️ History cleared');
-    }
+}
+
+// ================================================================
+// FILE HANDLING
+// ================================================================
+function setFile(file) {
+  if (!file) return;
+  const accepted = ['application/pdf', 'image/png', 'image/jpeg'];
+  if (!accepted.includes(file.type)) {
+    showError('Please upload PDF, PNG, or JPG');
+    return;
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    showError('File must be under 15 MB');
+    return;
+  }
+  selectedFile = file;
+  currentFileName = file.name;
+  $('#fileName').textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+  $('#fileInfo').style.display = 'flex';
+  $('#dropZone').style.display = 'none';
+  $('#generateBtn').disabled = false;
+  hideError();
+}
+
+function clearFile() {
+  selectedFile = null;
+  $('#fileInput').value = '';
+  $('#fileInfo').style.display = 'none';
+  $('#dropZone').style.display = 'block';
+  $('#generateBtn').disabled = true;
+}
+
+const dz = $('#dropZone');
+dz.addEventListener('click', () => $('#fileInput').click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); setFile(e.dataTransfer.files[0]); });
+$('#fileInput').addEventListener('change', e => setFile(e.target.files[0]));
+
+// ================================================================
+// LOADING
+// ================================================================
+function setLoading(on) {
+  $('#processing').style.display = on ? 'block' : 'none';
+  $('#generateBtn').style.display = on ? 'none' : 'inline-block';
+  if (on) {
+    const texts = ['Reading your project brief…', 'Finding milestones…', 'Matching tasks to roles…', 'Building timeline…'];
+    let idx = 0;
+    const stages = $$('.stage');
+    clearInterval(window._stageTimer);
+    window._stageTimer = setInterval(() => {
+      idx = (idx + 1) % texts.length;
+      $('#processText').textContent = texts[idx];
+      stages.forEach((s, i) => s.classList.toggle('active', i <= idx));
+    }, 900);
+  } else {
+    clearInterval(window._stageTimer);
+  }
+}
+
+// ================================================================
+// RENDER PLAN
+// ================================================================
+function render(data) {
+  currentPlan = data;
+  const tasks = data.tasks || [];
+  const roles = data.team_roles || [];
+  const tl = data.timeline || {};
+
+  $('#projectSummary').textContent = data.project_summary || 'Your project plan is ready.';
+  $('#metricGrid').innerHTML = `
+    <div class="metric-item"><div class="value">${tasks.length}</div><div class="label">Tasks</div></div>
+    <div class="metric-item"><div class="value">${roles.length}</div><div class="label">Roles</div></div>
+    <div class="metric-item"><div class="value">${tasks.reduce((s, t) => s + (Number(t.estimated_hours) || 0), 0)}h</div><div class="label">Est. Hours</div></div>
+    <div class="metric-item"><div class="value">${Object.keys(tl).length}</div><div class="label">Weeks</div></div>
+  `;
+
+  $('#taskList').innerHTML = tasks.map((t, i) => `
+    <div class="task-item">
+      <span style="font-weight:600;color:var(--muted);">${i+1}</span>
+      <div><strong>${escape(t.name)}</strong><br><small style="color:var(--muted);">${t.estimated_hours || '?'} hours</small></div>
+      <span class="badge badge-${t.priority || 'medium'}">${t.priority || 'medium'}</span>
+    </div>
+  `).join('') || '<p style="color:var(--muted);">No tasks returned.</p>';
+
+  $('#roleList').innerHTML = roles.map(r => `
+    <div class="role-item"><strong>${escape(r.role)}</strong><p>${(r.tasks || []).map(escape).join(' · ') || 'Tasks to be assigned'}</p></div>
+  `).join('') || '<p style="color:var(--muted);">No roles returned.</p>';
+
+  $('#timelineGrid').innerHTML = Object.entries(tl).map(([week, items]) => `
+    <div class="week-box"><h4>${escape(week.replace(/([A-Z])/g, ' $1'))}</h4><ul>${(items || []).map(i => `<li>${escape(i)}</li>`).join('')}</ul></div>
+  `).join('') || '<p style="color:var(--muted);">No timeline returned.</p>';
+
+  const suggestions = [];
+  if (data.budget) suggestions.push(`💰 Budget: ${data.budget}`);
+  if (data.risks && data.risks.length) {
+    suggestions.push(`⚠️ Risks: ${data.risks.slice(0, 3).map(r => r.risk).join(', ')}`);
+  }
+  if (data.success_metrics && data.success_metrics.length) {
+    suggestions.push(`🎯 Success Metrics: ${data.success_metrics.join(', ')}`);
+  }
+  if (suggestions.length === 0) suggestions.push('✨ Add more detail to your brief for smarter suggestions!');
+  $('#suggestionList').innerHTML = suggestions.map(s => `<li>${s}</li>`).join('');
+
+  $('#dashboard').style.display = 'block';
+  setTimeout(() => $('#dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+  celebrate();
+  
+  // Save to Firestore
+  if (currentUser && currentFileName) {
+    savePlanToFirestore(currentFileName, data);
+  }
+}
+
+// ================================================================
+// GENERATE PLAN
+// ================================================================
+async function generatePlan() {
+  hideError();
+  if (!selectedFile) {
+    showError('Please upload a project brief.');
+    return;
   }
 
-  // ============================================================
-  // THEME
-  // ============================================================
-  function toggleTheme() {
-    const html = document.documentElement;
-    const current = html.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('taskmate-theme', next);
+  setLoading(true);
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result.split(',')[1]);
+      r.onerror = reject;
+      r.readAsDataURL(selectedFile);
+    });
+
+    const prompt = `Analyze this project brief. Return a COMPLETE team project plan with:
+      - Project summary (1 sentence)
+      - 5-10 tasks with: name, estimated_hours (number), priority (high/medium/low)
+      - 3-5 team roles with: role name, tasks (array of task names)
+      - 4-week timeline with weekly breakdown
+      - Budget estimate: "low" / "medium" / "high"
+      - Key risks: array of { risk, mitigation }
+      - Success metrics: array of strings
+
+      Return ONLY valid JSON with this exact structure:
+      {
+        "project_summary": "...",
+        "tasks": [{"name":"...","estimated_hours":2,"priority":"high"}],
+        "team_roles": [{"role":"...","tasks":["task1","task2"]}],
+        "timeline": {"week1":["Task A"],"week2":["Task B"]},
+        "budget": "medium",
+        "risks": [{"risk":"...","mitigation":"..."}],
+        "success_metrics": ["..."]
+      }`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType: selectedFile.type, data: base64 } }
+            ]
+          }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
+        })
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || 'API error');
+
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('');
+    if (!text) throw new Error('No response from Gemini');
+
+    const clean = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+    const parsed = JSON.parse(clean);
+    render(parsed);
+    toast('✅ Plan generated successfully!');
+  } catch (err) {
+    showError(err.message || 'Something went wrong. Try again.');
+  } finally {
+    setLoading(false);
   }
+}
 
-  // ============================================================
-  // CONFETTI
-  // ============================================================
-  function celebrate() {
-    const colors = ['#4285f4', '#ea4335', '#fbbc04', '#34a853', '#a142f4'];
-    for (let i = 0; i < 60; i++) {
-      const el = document.createElement('div');
-      el.className = 'confetti';
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.background = colors[i % colors.length];
-      el.style.setProperty('--drift', (Math.random() * 220 - 110) + 'px');
-      el.style.animationDelay = (Math.random() * 0.4) + 's';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2500);
-    }
+$('#generateBtn').addEventListener('click', generatePlan);
+
+// ================================================================
+// SAMPLE PLAN
+// ================================================================
+function loadSample() {
+  const sample = {
+    project_summary: "Create a sustainability awareness campaign for college campus.",
+    tasks: [
+      { name: "Research sustainability initiatives", estimated_hours: 4, priority: "high" },
+      { name: "Design campaign posters", estimated_hours: 6, priority: "high" },
+      { name: "Create social media content", estimated_hours: 5, priority: "medium" },
+      { name: "Plan workshop events", estimated_hours: 3, priority: "medium" },
+      { name: "Final presentation", estimated_hours: 2, priority: "low" }
+    ],
+    team_roles: [
+      { role: "Project Lead", tasks: ["Research sustainability initiatives", "Final presentation"] },
+      { role: "Designer", tasks: ["Design campaign posters", "Create social media content"] },
+      { role: "Event Coordinator", tasks: ["Plan workshop events"] }
+    ],
+    timeline: {
+      week1: ["Research sustainability initiatives", "Design campaign posters"],
+      week2: ["Create social media content", "Plan workshop events"],
+      week3: ["Final presentation"]
+    },
+    budget: "low",
+    risks: [{ risk: "Low engagement", mitigation: "Run social media contests" }],
+    success_metrics: ["100 students reached", "10 workshop attendees"]
+  };
+  currentFileName = 'sample-brief';
+  render(sample);
+  toast('🔍 Sample plan loaded');
+}
+
+// ================================================================
+// PDF EXPORT
+// ================================================================
+function downloadPDF() {
+  if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  doc.setFontSize(24);
+  doc.text('📋 Project Plan', 40, 50);
+  doc.setFontSize(14);
+  doc.text(currentPlan.project_summary || 'Project summary', 40, 80, { maxWidth: pageWidth - 80 });
+
+  const tasks = currentPlan.tasks || [];
+  const roles = currentPlan.team_roles || [];
+  const tl = currentPlan.timeline || {};
+
+  doc.autoTable({
+    head: [['#', 'Task', 'Hours', 'Priority']],
+    body: tasks.map((t, i) => [i + 1, t.name, t.estimated_hours || '?', t.priority || 'medium']),
+    startY: 120,
+  });
+
+  let y = doc.lastAutoTable.finalY + 20;
+  doc.setFontSize(16);
+  doc.text('👥 Team Roles', 40, y);
+  y += 20;
+  roles.forEach(r => {
+    doc.setFontSize(12);
+    doc.text(`• ${r.role}: ${(r.tasks || []).join(', ')}`, 40, y);
+    y += 20;
+  });
+
+  y += 10;
+  doc.setFontSize(16);
+  doc.text('📅 Timeline', 40, y);
+  y += 20;
+  Object.entries(tl).forEach(([week, items]) => {
+    doc.setFontSize(12);
+    doc.text(`${week}: ${(items || []).join(', ')}`, 40, y);
+    y += 16;
+  });
+
+  doc.save('project-plan.pdf');
+  toast('📄 PDF downloaded');
+}
+
+// ================================================================
+// TXT EXPORT
+// ================================================================
+function downloadTXT() {
+  if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
+  const data = currentPlan;
+  let txt = `📋 PROJECT PLAN\n${'='.repeat(60)}\n\n`;
+  txt += `📌 Summary: ${data.project_summary || 'N/A'}\n\n`;
+  txt += `📌 TASKS:\n`;
+  (data.tasks || []).forEach((t, i) => {
+    txt += `  ${i+1}. ${t.name} | Hours: ${t.estimated_hours || '?'} | Priority: ${t.priority || 'medium'}\n`;
+  });
+  txt += `\n👥 TEAM ROLES:\n`;
+  (data.team_roles || []).forEach(r => {
+    txt += `  ${r.role}: ${(r.tasks || []).join(', ')}\n`;
+  });
+  txt += `\n📅 TIMELINE:\n`;
+  Object.entries(data.timeline || {}).forEach(([week, items]) => {
+    txt += `  ${week}:\n`;
+    (items || []).forEach(i => txt += `    - ${i}\n`);
+  });
+  if (data.budget) txt += `\n💰 Budget: ${data.budget}\n`;
+  if (data.risks && data.risks.length) {
+    txt += `\n⚠️ Risks:\n`;
+    data.risks.forEach(r => txt += `  - ${r.risk}: ${r.mitigation || ''}\n`);
   }
-
-  // ============================================================
-  // RESET
-  // ============================================================
-  function resetAll() {
-    clearFile();
-    $('#dashboard').style.display = 'none';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (data.success_metrics && data.success_metrics.length) {
+    txt += `\n🎯 Success Metrics:\n`;
+    data.success_metrics.forEach(m => txt += `  - ${m}\n`);
   }
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${currentFileName || 'plan'}.txt`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  toast('📥 TXT downloaded');
+}
 
-  // ============================================================
-  // INIT
-  // ============================================================
-  const savedTheme = localStorage.getItem('taskmate-theme');
-  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+// ================================================================
+// SHARE PLAN
+// ================================================================
+function sharePlan() {
+  if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
+  const encoded = btoa(JSON.stringify(currentPlan));
+  const url = `${window.location.origin}${window.location.pathname}?plan=${encoded}`;
+  navigator.clipboard.writeText(url).then(() => toast('🔗 Shareable link copied!'));
+}
 
-  const params = new URLSearchParams(window.location.search);
-  const encodedPlan = params.get('plan');
-  if (encodedPlan) {
-    try {
-      const plan = JSON.parse(atob(encodedPlan));
-      render(plan);
-      toast('📋 Shared plan loaded');
-    } catch { /* ignore */ }
+// ================================================================
+// THEME
+// ================================================================
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('taskmate-theme', next);
+}
+
+// ================================================================
+// CONFETTI
+// ================================================================
+function celebrate() {
+  const colors = ['#4285f4', '#ea4335', '#fbbc04', '#34a853', '#a142f4'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = colors[i % colors.length];
+    el.style.setProperty('--drift', (Math.random() * 220 - 110) + 'px');
+    el.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
   }
+}
 
-  renderHistory();
+// ================================================================
+// RESET
+// ================================================================
+function resetAll() {
+  clearFile();
+  $('#dashboard').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ================================================================
+// INIT
+// ================================================================
+const savedTheme = localStorage.getItem('taskmate-theme');
+if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+const params = new URLSearchParams(window.location.search);
+const encodedPlan = params.get('plan');
+if (encodedPlan) {
+  try {
+    const plan = JSON.parse(atob(encodedPlan));
+    render(plan);
+    toast('📋 Shared plan loaded');
+  } catch { /* ignore */ }
+}
 </script>
 </body>
 </html>
