@@ -514,7 +514,7 @@
   // 🔑 YOUR WORKING API KEY - "AIzaSy" format (OLD but WORKS)
   // ============================================================
   const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
-  const MODEL = "gemini-2.5-flash";
+  const MODEL = "gemini-3.5-flash";  // <-- FIXED: Using latest model
 
   // ============================================================
   // STATE
@@ -656,7 +656,7 @@
   function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
   // ============================================================
-  // GENERATE PLAN - USING "AIzaSy" KEY (WORKS!)
+  // GENERATE PLAN - USING "AIzaSy" KEY + gemini-3.5-flash
   // ============================================================
   async function generatePlan() {
     hideError();
@@ -698,7 +698,6 @@
           "success_metrics": ["..."]
         }`;
 
-      // Using ?key= in URL - WORKS with AIzaSy keys!
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
         {
