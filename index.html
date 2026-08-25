@@ -511,12 +511,11 @@
 
 <script>
   // ============================================================
-  // 🔑 IMPORTANT: Replace with your actual Gemini API Key
-  // Must start with "AIzaSy..." (NOT "AQ.Ab8...")
-  // Get it from: https://makersuite.google.com/app/apikey
+  // 🔑 YOUR API KEY IS ALREADY INSERTED HERE
+  // Format: AQ. (Google's new standard)
   // ============================================================
-  const GEMINI_API_KEY = "AQ.Ab8RN6JQr4u7lnzZTnJK443OL3yTTZdycyvTiq7r0-W9COJqhg"; // <--- REPLACE THIS
-  const MODEL = "gemini-3.5-flash";
+  const GEMINI_API_KEY = "AQ.Ab8RN6JQr4u7lnzZTnJK443OL3yTTZdycyvTiq7r0-W9COJqhg";
+  const MODEL = "gemini-2.5-flash";
 
   // ============================================================
   // STATE
@@ -658,12 +657,13 @@
   function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
   // ============================================================
-  // GENERATE PLAN
+  // GENERATE PLAN - FIXED FOR AQ. KEYS
+  // Uses x-goog-api-key header instead of URL param
   // ============================================================
   async function generatePlan() {
     hideError();
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'AQ.Ab8RN6JQr4u7lnzZTnJK443OL3yTTZdycyvTiq7r0-W9COJqhg') {
-      showError('Please set your Gemini API key in the code. Get it from makersuite.google.com/app/apikey');
+    if (!GEMINI_API_KEY) {
+      showError('Please set your Gemini API key in the code.');
       return;
     }
     if (!selectedFile) {
@@ -700,11 +700,15 @@
           "success_metrics": ["..."]
         }`;
 
+      // FIX: Using x-goog-api-key header instead of ?key= in URL
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${AQ.Ab8RN6JQr4u7lnzZTnJK443OL3yTTZdycyvTiq7r0-W9COJqhg}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY  // <-- KEY GOES HERE, NOT IN URL
+          },
           body: JSON.stringify({
             contents: [{
               parts: [
