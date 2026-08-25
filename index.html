@@ -399,24 +399,76 @@
       background: var(--surface);
       padding: 40px;
       border-radius: 24px;
-      max-width: 420px;
+      max-width: 460px;
       width: 90%;
       text-align: center;
       box-shadow: var(--shadow);
     }
-    .username-modal h2 { margin-bottom: 8px; }
+    .username-modal h2 { margin-bottom: 4px; }
     .username-modal p { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
-    .username-modal input {
+    .username-modal .input-wrap {
+      position: relative;
+    }
+    .username-modal .input-wrap input {
       width: 100%;
-      padding: 14px 18px;
+      padding: 14px 48px 14px 18px;
       border-radius: 12px;
       border: 2px solid var(--line);
       font-size: 16px;
       background: var(--canvas);
       color: var(--ink);
     }
-    .username-modal input:focus { border-color: var(--blue); outline: none; }
+    .username-modal .input-wrap input:focus { border-color: var(--blue); outline: none; }
+    .username-modal .input-wrap input:focus + .status-icon { display: block; }
+    .username-modal .status-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
     .username-modal .btn-primary { width: 100%; margin-top: 12px; }
+    .username-modal .help-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      text-align: left;
+    }
+    .username-modal .error-text {
+      color: #b3261e;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+      text-align: left;
+    }
+    .username-modal .suggestions-box {
+      margin-top: 8px;
+      display: none;
+      text-align: left;
+    }
+    .username-modal .suggestions-box .label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .username-modal .suggestions-box .list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .username-modal .suggestions-box .list button {
+      padding: 4px 12px;
+      border-radius: 99px;
+      border: 1px solid var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .username-modal .suggestions-box .list button:hover {
+      background: var(--blue);
+      color: white;
+    }
     
     /* ===== FRIENDS SECTION ===== */
     .friend-section {
@@ -507,6 +559,18 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     .user-name-display { font-weight: 600; color: var(--blue); }
+    .history-item {
+      padding: 12px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+    .history-item:hover { background: var(--canvas); border-color: var(--blue); }
   </style>
 </head>
 <body>
@@ -526,11 +590,19 @@
 <!-- ===== USERNAME PROMPT ===== -->
 <div id="usernamePrompt" class="username-prompt">
   <div class="username-modal">
-    <h2>👋 Welcome!</h2>
-    <p>Choose a unique username so your friends can find you</p>
-    <input type="text" id="usernameInput" placeholder="e.g. arnav_123" maxlength="20">
-    <div id="usernameError" style="color:#b3261e;font-size:13px;margin-top:8px;display:none;"></div>
-    <button class="btn-primary" onclick="setUsername()" style="width:100%;margin-top:12px;">Continue →</button>
+    <h2>👋 Choose your username</h2>
+    <p>This will be your unique identity on TaskMate AI</p>
+    <div class="input-wrap">
+      <input type="text" id="usernameInput" placeholder="e.g. arnav_8247" maxlength="20" oninput="checkUsernameAvailability(this.value)">
+      <span class="status-icon" id="usernameStatus"></span>
+    </div>
+    <div class="help-text" id="usernameHelp">Only letters, numbers, and underscores</div>
+    <div class="error-text" id="usernameError"></div>
+    <div class="suggestions-box" id="suggestionsBox">
+      <div class="label">💡 Suggestions:</div>
+      <div class="list" id="suggestionList"></div>
+    </div>
+    <button class="btn-primary" id="usernameContinueBtn" onclick="setUsername()" style="width:100%;margin-top:12px;" disabled>Continue →</button>
   </div>
 </div>
 
@@ -680,7 +752,7 @@
 
 <script>
 // ================================================================
-// 🔥 FIREBASE CONFIG - YOUR ACTUAL CONFIG
+// 🔥 FIREBASE CONFIG
 // ================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDZe2tFNX0vySrQ4LMezq-gM-JtOlhXD0s",
@@ -699,7 +771,7 @@ const db = firebase.firestore();
 // 🔑 GEMINI API KEY
 // ================================================================
 const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
-const MODEL = "gemini-3.5-flash";
+const MODEL = "gemini-1.5-flash";
 
 // ================================================================
 // STATE
@@ -709,6 +781,8 @@ let currentPlan = null;
 let currentFileName = null;
 let currentUser = null;
 let currentUsername = null;
+let usernameAvailable = false;
+let usernameCheckTimeout = null;
 
 // ================================================================
 // DOM HELPERS
@@ -770,7 +844,143 @@ auth.onAuthStateChanged(user => {
 });
 
 // ================================================================
-// USERNAME
+// USERNAME - GENERATE RANDOM
+// ================================================================
+function generateRandomUsername(displayName) {
+  const base = (displayName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return base + '_' + random;
+}
+
+// ================================================================
+// USERNAME - CHECK AVAILABILITY
+// ================================================================
+function checkUsernameAvailability(username) {
+  const statusEl = document.getElementById('usernameStatus');
+  const errorEl = document.getElementById('usernameError');
+  const suggestionsEl = document.getElementById('suggestionsBox');
+  const continueBtn = document.getElementById('usernameContinueBtn');
+  const helpEl = document.getElementById('usernameHelp');
+  
+  usernameAvailable = false;
+  continueBtn.disabled = true;
+  statusEl.textContent = '';
+  errorEl.style.display = 'none';
+  suggestionsEl.style.display = 'none';
+  
+  if (!username || username.length < 3) {
+    helpEl.textContent = 'Minimum 3 characters. Only letters, numbers, and underscores.';
+    return;
+  }
+  
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    helpEl.textContent = '❌ Only letters, numbers, and underscores allowed.';
+    statusEl.textContent = '❌';
+    return;
+  }
+  
+  helpEl.textContent = 'Checking availability...';
+  statusEl.textContent = '⏳';
+  
+  clearTimeout(usernameCheckTimeout);
+  usernameCheckTimeout = setTimeout(() => {
+    db.collection('users').where('username', '==', username.toLowerCase()).get().then(snapshot => {
+      if (snapshot.empty) {
+        usernameAvailable = true;
+        statusEl.textContent = '✅';
+        helpEl.textContent = '✅ Available!';
+        continueBtn.disabled = false;
+        suggestionsEl.style.display = 'none';
+      } else {
+        usernameAvailable = false;
+        statusEl.textContent = '❌';
+        helpEl.textContent = '❌ Username already taken';
+        continueBtn.disabled = true;
+        showSuggestions(username);
+      }
+    }).catch(() => {
+      helpEl.textContent = '⚠️ Error checking availability';
+    });
+  }, 300);
+}
+
+// ================================================================
+// USERNAME - SHOW SUGGESTIONS
+// ================================================================
+function showSuggestions(takenUsername) {
+  const suggestionsEl = document.getElementById('suggestionsBox');
+  const listEl = document.getElementById('suggestionList');
+  suggestionsEl.style.display = 'block';
+  listEl.innerHTML = '';
+  
+  const base = takenUsername.replace(/_[0-9]+$/, '');
+  const suggestions = [];
+  for (let i = 0; i < 10; i++) {
+    const random = Math.floor(100 + Math.random() * 900);
+    suggestions.push(base + '_' + random);
+  }
+  
+  let checked = 0;
+  let found = 0;
+  suggestions.forEach(suggestion => {
+    db.collection('users').where('username', '==', suggestion).get().then(snapshot => {
+      checked++;
+      if (snapshot.empty && found < 3) {
+        found++;
+        const btn = document.createElement('button');
+        btn.textContent = suggestion;
+        btn.onclick = function() {
+          document.getElementById('usernameInput').value = suggestion;
+          checkUsernameAvailability(suggestion);
+          suggestionsEl.style.display = 'none';
+        };
+        listEl.appendChild(btn);
+      }
+      if (checked === suggestions.length && found === 0) {
+        const msg = document.createElement('span');
+        msg.textContent = 'Try adding numbers to your username';
+        msg.style.cssText = 'font-size:12px;color:var(--muted);';
+        listEl.appendChild(msg);
+      }
+    });
+  });
+}
+
+// ================================================================
+// USERNAME - SET FINAL
+// ================================================================
+function setUsername() {
+  const input = document.getElementById('usernameInput');
+  const username = input.value.trim().toLowerCase();
+  const errorEl = document.getElementById('usernameError');
+  
+  if (!usernameAvailable) {
+    errorEl.textContent = 'Please choose an available username';
+    errorEl.style.display = 'block';
+    return;
+  }
+  
+  errorEl.style.display = 'none';
+  
+  db.collection('users').doc(currentUser.uid).set({
+    username: username,
+    email: currentUser.email,
+    displayName: currentUser.displayName || username,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    currentUsername = username;
+    $('#userDisplay').textContent = '👤 @' + username;
+    document.getElementById('usernamePrompt').classList.remove('active');
+    toast('✅ Welcome, @' + username + '!');
+    loadUserPlans(currentUser.uid);
+  }).catch(err => {
+    errorEl.textContent = 'Error: ' + err.message;
+    errorEl.style.display = 'block';
+  });
+}
+
+// ================================================================
+// USERNAME - CHECK ON LOGIN
 // ================================================================
 function checkUsername(user) {
   db.collection('users').doc(user.uid).get().then(doc => {
@@ -778,57 +988,11 @@ function checkUsername(user) {
       currentUsername = doc.data().username;
       $('#userDisplay').textContent = '👤 @' + currentUsername;
     } else {
+      const randomUsername = generateRandomUsername(user.displayName || user.email);
+      document.getElementById('usernameInput').value = randomUsername;
       document.getElementById('usernamePrompt').classList.add('active');
+      checkUsernameAvailability(randomUsername);
     }
-  });
-}
-
-function setUsername() {
-  const input = document.getElementById('usernameInput');
-  const username = input.value.trim().toLowerCase();
-  const errorEl = document.getElementById('usernameError');
-  
-  if (!username) {
-    errorEl.textContent = 'Please enter a username';
-    errorEl.style.display = 'block';
-    return;
-  }
-  if (username.length < 3) {
-    errorEl.textContent = 'Username must be at least 3 characters';
-    errorEl.style.display = 'block';
-    return;
-  }
-  if (!/^[a-z0-9_]+$/.test(username)) {
-    errorEl.textContent = 'Only letters, numbers, and underscores allowed';
-    errorEl.style.display = 'block';
-    return;
-  }
-
-  errorEl.style.display = 'none';
-  
-  // Check if username is taken
-  db.collection('users').where('username', '==', username).get().then(snapshot => {
-    if (!snapshot.empty) {
-      errorEl.textContent = 'Username already taken. Try another.';
-      errorEl.style.display = 'block';
-      return;
-    }
-    
-    // Save username
-    db.collection('users').doc(currentUser.uid).set({
-      username: username,
-      email: currentUser.email,
-      displayName: currentUser.displayName || username,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      currentUsername = username;
-      $('#userDisplay').textContent = '👤 @' + username;
-      document.getElementById('usernamePrompt').classList.remove('active');
-      toast('✅ Username set: @' + username);
-      loadUserPlans(currentUser.uid);
-    }).catch(err => {
-      toast('❌ Error: ' + err.message);
-    });
   });
 }
 
@@ -852,7 +1016,7 @@ function loadUserPlans(uid) {
         const tasks = data.data?.tasks?.length || 0;
         const name = data.fileName || 'Untitled';
         const time = data.timestamp?.toDate?.() ? data.timestamp.toDate().toLocaleString() : 'Recently';
-        html += `<div class="history-item" onclick="loadPlanFromFirestore('${doc.id}')" style="padding:12px 16px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        html += `<div class="history-item" onclick="loadPlanFromFirestore('${doc.id}')">
           <div><strong>📄 ${escape(name)}</strong> <span style="font-size:12px;color:var(--muted);">${tasks} tasks</span></div>
           <div style="font-size:12px;color:var(--muted);">${time}</div>
         </div>`;
@@ -918,17 +1082,6 @@ function searchUsers(query) {
           html += `<div class="friend-result"><span>${escape(data.username)} (you)</span></div>`;
           return;
         }
-        // Check if already friends
-        db.collection('users').doc(currentUser.uid).collection('friends').doc(uid).get().then(friendDoc => {
-          const isFriend = friendDoc.exists;
-          const btn = document.getElementById('friend_btn_' + uid);
-          if (btn) {
-            if (isFriend) {
-              btn.textContent = '✅ Friends';
-              btn.disabled = true;
-            }
-          }
-        });
         html += `<div class="friend-result" id="result_${uid}">
           <span>@${escape(data.username)}</span>
           <button id="friend_btn_${uid}" onclick="sendFriendRequest('${uid}')">➕ Add Friend</button>
@@ -936,7 +1089,6 @@ function searchUsers(query) {
       });
       results.innerHTML = html;
       
-      // Check friend status for each result
       snapshot.forEach(doc => {
         const uid = doc.id;
         if (uid !== currentUser.uid) {
@@ -947,7 +1099,6 @@ function searchUsers(query) {
               btn.disabled = true;
             }
           });
-          // Check if request already sent
           db.collection('friendRequests')
             .where('from', '==', currentUser.uid)
             .where('to', '==', uid)
@@ -1010,7 +1161,6 @@ function loadRequests(uid) {
 
 function acceptRequest(requestId, fromUid) {
   const uid = currentUser.uid;
-  // Add to friends
   db.collection('users').doc(uid).collection('friends').doc(fromUid).set({
     uid: fromUid,
     added: firebase.firestore.FieldValue.serverTimestamp()
@@ -1019,7 +1169,6 @@ function acceptRequest(requestId, fromUid) {
     uid: uid,
     added: firebase.firestore.FieldValue.serverTimestamp()
   });
-  // Delete request
   db.collection('friendRequests').doc(requestId).delete().then(() => {
     toast('✅ Friend added!');
     loadFriends(uid);
@@ -1056,7 +1205,6 @@ function loadFriends(uid) {
         }
       });
     });
-    // Load friends' plans
     loadFriendsPlans(uid);
   });
 }
@@ -1096,10 +1244,9 @@ function loadFriendsPlans(uid) {
               container.innerHTML = '<p style="color:var(--muted);">No plans shared by friends yet</p>';
               return;
             }
-            // Get usernames for each plan
             let html = '';
-            allPlans.forEach((p, i) => {
-              html += `<div class="history-item" style="padding:10px 14px;border:1px solid var(--line);border-radius:12px;margin-top:6px;">
+            allPlans.forEach((p) => {
+              html += `<div class="history-item">
                 <div><strong>📄 ${escape(p.fileName)}</strong> <span style="font-size:12px;color:var(--muted);">${p.tasks} tasks</span></div>
                 <div style="font-size:11px;color:var(--muted);">Friend</div>
               </div>`;
@@ -1238,7 +1385,6 @@ function render(data) {
   setTimeout(() => $('#dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
   celebrate();
   
-  // Save to Firestore
   if (currentUser && currentFileName) {
     savePlanToFirestore(currentFileName, data);
   }
