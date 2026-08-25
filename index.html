@@ -419,7 +419,6 @@
       color: var(--ink);
     }
     .username-modal .input-wrap input:focus { border-color: var(--blue); outline: none; }
-    .username-modal .input-wrap input:focus + .status-icon { display: block; }
     .username-modal .status-icon {
       position: absolute;
       right: 14px;
@@ -752,7 +751,7 @@
 
 <script>
 // ================================================================
-// 🔥 FIREBASE CONFIG
+// FIREBASE CONFIG
 // ================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDZe2tFNX0vySrQ4LMezq-gM-JtOlhXD0s",
@@ -768,8 +767,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ================================================================
-// 🔑 GEMINI API KEY
-// ================================================================
+// GEMINI API KEY// ================================================================
 const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
 const MODEL = "gemini-1.5-flash";
 
@@ -853,7 +851,7 @@ function generateRandomUsername(displayName) {
 }
 
 // ================================================================
-// USERNAME - CHECK AVAILABILITY
+// USERNAME - CHECK AVAILABILITY (FIXED - NO INDEX NEEDED)
 // ================================================================
 function checkUsernameAvailability(username) {
   const statusEl = document.getElementById('usernameStatus');
@@ -884,8 +882,21 @@ function checkUsernameAvailability(username) {
   
   clearTimeout(usernameCheckTimeout);
   usernameCheckTimeout = setTimeout(() => {
-    db.collection('users').where('username', '==', username.toLowerCase()).get().then(snapshot => {
-      if (snapshot.empty) {
+    // Get ALL users and check in memory (NO INDEX NEEDED)
+    db.collection('users').get().then(snapshot => {
+      let taken = false;
+      const allUsernames = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.username) {
+          allUsernames.push(data.username);
+          if (data.username === username.toLowerCase()) {
+            taken = true;
+          }
+        }
+      });
+      
+      if (!taken) {
         usernameAvailable = true;
         statusEl.textContent = '✅';
         helpEl.textContent = '✅ Available!';
@@ -896,7 +907,7 @@ function checkUsernameAvailability(username) {
         statusEl.textContent = '❌';
         helpEl.textContent = '❌ Username already taken';
         continueBtn.disabled = true;
-        showSuggestions(username);
+        showSuggestions(username, allUsernames);
       }
     }).catch(() => {
       helpEl.textContent = '⚠️ Error checking availability';
@@ -907,43 +918,38 @@ function checkUsernameAvailability(username) {
 // ================================================================
 // USERNAME - SHOW SUGGESTIONS
 // ================================================================
-function showSuggestions(takenUsername) {
+function showSuggestions(takenUsername, existingUsernames) {
   const suggestionsEl = document.getElementById('suggestionsBox');
   const listEl = document.getElementById('suggestionList');
   suggestionsEl.style.display = 'block';
   listEl.innerHTML = '';
   
   const base = takenUsername.replace(/_[0-9]+$/, '');
-  const suggestions = [];
-  for (let i = 0; i < 10; i++) {
+  let found = 0;
+  
+  for (let i = 0; i < 20; i++) {
+    if (found >= 3) break;
     const random = Math.floor(100 + Math.random() * 900);
-    suggestions.push(base + '_' + random);
+    const suggestion = base + '_' + random;
+    if (!existingUsernames.includes(suggestion)) {
+      found++;
+      const btn = document.createElement('button');
+      btn.textContent = suggestion;
+      btn.onclick = function() {
+        document.getElementById('usernameInput').value = suggestion;
+        checkUsernameAvailability(suggestion);
+        suggestionsEl.style.display = 'none';
+      };
+      listEl.appendChild(btn);
+    }
   }
   
-  let checked = 0;
-  let found = 0;
-  suggestions.forEach(suggestion => {
-    db.collection('users').where('username', '==', suggestion).get().then(snapshot => {
-      checked++;
-      if (snapshot.empty && found < 3) {
-        found++;
-        const btn = document.createElement('button');
-        btn.textContent = suggestion;
-        btn.onclick = function() {
-          document.getElementById('usernameInput').value = suggestion;
-          checkUsernameAvailability(suggestion);
-          suggestionsEl.style.display = 'none';
-        };
-        listEl.appendChild(btn);
-      }
-      if (checked === suggestions.length && found === 0) {
-        const msg = document.createElement('span');
-        msg.textContent = 'Try adding numbers to your username';
-        msg.style.cssText = 'font-size:12px;color:var(--muted);';
-        listEl.appendChild(msg);
-      }
-    });
-  });
+  if (found === 0) {
+    const msg = document.createElement('span');
+    msg.textContent = 'Try adding numbers to your username';
+    msg.style.cssText = 'font-size:12px;color:var(--muted);';
+    listEl.appendChild(msg);
+  }
 }
 
 // ================================================================
@@ -1057,6 +1063,9 @@ function savePlanToFirestore(fileName, data) {
 // ================================================================
 // FRIEND SYSTEM
 // ================================================================
+// ================================================================
+// SEARCH USERS (FIXED - NO INDEX NEEDED)
+// ================================================================
 function searchUsers(query) {
   const results = document.getElementById('searchResults');
   if (!query || query.length < 2) {
@@ -1064,56 +1073,62 @@ function searchUsers(query) {
     return;
   }
   
-  db.collection('users')
-    .where('username', '>=', query.toLowerCase())
-    .where('username', '<=', query.toLowerCase() + '\uf8ff')
-    .limit(10)
-    .get()
-    .then(snapshot => {
-      if (snapshot.empty) {
-        results.innerHTML = '<p style="color:var(--muted);">No users found</p>';
+  // Get ALL users and filter in memory (NO INDEX NEEDED)
+  db.collection('users').get().then(snapshot => {
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.username && data.username.toLowerCase().includes(query.toLowerCase())) {
+        users.push({ uid: doc.id, ...data });
+      }
+    });
+    
+    if (users.length === 0) {
+      results.innerHTML = '<p style="color:var(--muted);">No users found</p>';
+      return;
+    }
+    
+    let html = '';
+    users.slice(0, 10).forEach(user => {
+      if (user.uid === currentUser.uid) {
+        html += `<div class="friend-result"><span>${escape(user.username)} (you)</span></div>`;
         return;
       }
-      let html = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const uid = doc.id;
-        if (uid === currentUser.uid) {
-          html += `<div class="friend-result"><span>${escape(data.username)} (you)</span></div>`;
-          return;
-        }
-        html += `<div class="friend-result" id="result_${uid}">
-          <span>@${escape(data.username)}</span>
-          <button id="friend_btn_${uid}" onclick="sendFriendRequest('${uid}')">➕ Add Friend</button>
-        </div>`;
-      });
-      results.innerHTML = html;
-      
-      snapshot.forEach(doc => {
-        const uid = doc.id;
-        if (uid !== currentUser.uid) {
-          db.collection('users').doc(currentUser.uid).collection('friends').doc(uid).get().then(friendDoc => {
-            const btn = document.getElementById('friend_btn_' + uid);
-            if (btn && friendDoc.exists) {
-              btn.textContent = '✅ Friends';
+      html += `<div class="friend-result" id="result_${user.uid}">
+        <span>@${escape(user.username)}</span>
+        <button id="friend_btn_${user.uid}" onclick="sendFriendRequest('${user.uid}')">➕ Add Friend</button>
+      </div>`;
+    });
+    results.innerHTML = html;
+    
+    // Check friend status for each result
+    users.forEach(user => {
+      if (user.uid !== currentUser.uid) {
+        db.collection('users').doc(currentUser.uid).collection('friends').doc(user.uid).get().then(friendDoc => {
+          const btn = document.getElementById('friend_btn_' + user.uid);
+          if (btn && friendDoc.exists) {
+            btn.textContent = '✅ Friends';
+            btn.disabled = true;
+          }
+        });
+        db.collection('friendRequests')
+          .where('from', '==', currentUser.uid)
+          .where('to', '==', user.uid)
+          .where('status', '==', 'pending')
+          .get()
+          .then(snap => {
+            const btn = document.getElementById('friend_btn_' + user.uid);
+            if (btn && !snap.empty) {
+              btn.textContent = '⏳ Pending';
               btn.disabled = true;
             }
           });
-          db.collection('friendRequests')
-            .where('from', '==', currentUser.uid)
-            .where('to', '==', uid)
-            .where('status', '==', 'pending')
-            .get()
-            .then(snap => {
-              const btn = document.getElementById('friend_btn_' + uid);
-              if (btn && !snap.empty) {
-                btn.textContent = '⏳ Pending';
-                btn.disabled = true;
-              }
-            });
-        }
-      });
+      }
     });
+  }).catch(err => {
+    results.innerHTML = '<p style="color:var(--muted);">Error loading users</p>';
+    console.error(err);
+  });
 }
 
 function sendFriendRequest(toUid) {
@@ -1181,6 +1196,9 @@ function rejectRequest(requestId) {
   });
 }
 
+// ================================================================
+// LOAD FRIENDS (FIXED - SHOWS USERNAMES)
+// ================================================================
 function loadFriends(uid) {
   db.collection('users').doc(uid).collection('friends').onSnapshot(snapshot => {
     const list = document.getElementById('friendsList');
@@ -1188,24 +1206,33 @@ function loadFriends(uid) {
       list.innerHTML = '<p style="color:var(--muted);">No friends yet. Add some!</p>';
       return;
     }
-    let html = '';
+    
+    // Get all friend UIDs
+    const friendUids = [];
     snapshot.forEach(doc => {
-      const friendUid = doc.data().uid;
+      friendUids.push(doc.data().uid);
+    });
+    
+    // Fetch usernames for all friends
+    let html = '';
+    let loaded = 0;
+    friendUids.forEach(friendUid => {
       db.collection('users').doc(friendUid).get().then(userDoc => {
         if (userDoc.exists) {
-          const username = userDoc.data().username || friendUid;
-          const existing = document.getElementById('friend_item_' + friendUid);
-          if (!existing) {
-            const div = document.createElement('div');
-            div.id = 'friend_item_' + friendUid;
-            div.className = 'friend-list-item';
-            div.innerHTML = `<span>@${escape(username)}</span><small>Friend</small>`;
-            list.appendChild(div);
-          }
+          const data = userDoc.data();
+          const username = data.username || friendUid;
+          html += `<div class="friend-list-item">
+            <span>@${escape(username)}</span>
+            <small>Friend</small>
+          </div>`;
+        }
+        loaded++;
+        if (loaded === friendUids.length) {
+          list.innerHTML = html;
+          loadFriendsPlans(uid);
         }
       });
     });
-    loadFriendsPlans(uid);
   });
 }
 
@@ -1218,12 +1245,16 @@ function loadFriendsPlans(uid) {
       container.innerHTML = '<p style="color:var(--muted);">No friends yet. Add some to see their plans!</p>';
       return;
     }
-    let allPlans = [];
-    let completed = 0;
-    const total = snapshot.size;
     
+    const friendUids = [];
     snapshot.forEach(doc => {
-      const friendUid = doc.data().uid;
+      friendUids.push(doc.data().uid);
+    });
+    
+    let allPlans = [];
+    let loaded = 0;
+    
+    friendUids.forEach(friendUid => {
       db.collection('users').doc(friendUid).collection('plans')
         .orderBy('timestamp', 'desc')
         .limit(3)
@@ -1232,14 +1263,13 @@ function loadFriendsPlans(uid) {
           plans.forEach(plan => {
             const data = plan.data();
             allPlans.push({
-              username: 'friend',
               fileName: data.fileName || 'Untitled',
               tasks: data.data?.tasks?.length || 0,
               timestamp: data.timestamp
             });
           });
-          completed++;
-          if (completed === total) {
+          loaded++;
+          if (loaded === friendUids.length) {
             if (allPlans.length === 0) {
               container.innerHTML = '<p style="color:var(--muted);">No plans shared by friends yet</p>';
               return;
