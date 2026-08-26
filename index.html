@@ -767,9 +767,10 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ================================================================
-// GEMINI MODEL - NO API KEY IN CODE!
+// GEMINI MODEL & BACKEND URL
 // ================================================================
 const MODEL = "gemini-3.6-flash";
+const BACKEND_URL = "https://taskmate-backend-r70x.onrender.com"; // Your actual backend URL
 
 // ================================================================
 // STATE
@@ -1404,7 +1405,7 @@ function render(data) {
 }
 
 // ================================================================
-// GENERATE PLAN - SECURE (NO API KEY IN FRONTEND)
+// GENERATE PLAN - UPDATED WITH BACKEND URL
 // ================================================================
 async function generatePlan() {
   hideError();
@@ -1442,8 +1443,8 @@ async function generatePlan() {
         "success_metrics": ["..."]
       }`;
 
-    // 🔥 KEY CHANGE: Send to your backend proxy (no API key in frontend!)
-    const res = await fetch('/api/generate', {
+    // Using the backend URL from the config
+    const res = await fetch(`${BACKEND_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
