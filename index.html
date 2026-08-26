@@ -570,22 +570,6 @@
       transition: var(--transition);
     }
     .history-item:hover { background: var(--canvas); border-color: var(--blue); }
-
-    /* ===== API KEY INPUT ===== */
-    .api-key-input {
-      width: 100%;
-      padding: 12px 16px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: var(--canvas);
-      color: var(--ink);
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
-    .api-key-input:focus {
-      border-color: var(--blue);
-      outline: none;
-    }
   </style>
 </head>
 <body>
@@ -653,12 +637,6 @@
     <div id="tabPlans" class="tab-content active">
 
       <div class="glass-card">
-        <!-- ===== API KEY INPUT ===== -->
-        <div style="margin-bottom:12px;">
-          <label style="font-weight:600;font-size:13px;color:var(--muted);">🔑 Gemini API Key</label>
-          <input type="text" id="apiKeyInput" class="api-key-input" placeholder="Paste your Gemini API key here">
-        </div>
-
         <div class="upload-zone" id="dropZone">
           <div class="upload-icon">📄</div>
           <strong>Drop your brief here</strong>
@@ -789,7 +767,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ================================================================
-// GEMINI API - NOW READ FROM INPUT FIELD (NO HARDCODED KEY!)
+// GEMINI MODEL - NO API KEY IN CODE!
 // ================================================================
 const MODEL = "gemini-3.6-flash";
 
@@ -1426,18 +1404,10 @@ function render(data) {
 }
 
 // ================================================================
-// GENERATE PLAN - FIXED: Reads API Key from Input Field
+// GENERATE PLAN - SECURE (NO API KEY IN FRONTEND)
 // ================================================================
 async function generatePlan() {
   hideError();
-  
-  // Read API key from input field
-  const apiKey = document.getElementById('apiKeyInput').value.trim();
-  if (!apiKey) {
-    showError('Please paste your Gemini API key in the field above.');
-    return;
-  }
-  
   if (!selectedFile) {
     showError('Please upload a project brief.');
     return;
@@ -1472,33 +1442,21 @@ async function generatePlan() {
         "success_metrics": ["..."]
       }`;
 
-    // Use the API key from the input field
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: selectedFile.type, data: base64 } }
-            ]
-          }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.3 }
-        })
-      }
-    );
+    // 🔥 KEY CHANGE: Send to your backend proxy (no API key in frontend!)
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file: base64,
+        mimeType: selectedFile.type,
+        prompt: prompt
+      })
+    });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || 'API error');
+    if (!res.ok) throw new Error(data?.error || 'Server error');
 
-    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('');
-    if (!text) throw new Error('No response from Gemini');
-
-    const clean = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
-    const parsed = JSON.parse(clean);
-    render(parsed);
+    render(data);
     toast('✅ Plan generated successfully!');
   } catch (err) {
     showError(err.message || 'Something went wrong. Try again.');
