@@ -570,6 +570,22 @@
       transition: var(--transition);
     }
     .history-item:hover { background: var(--canvas); border-color: var(--blue); }
+
+    /* ===== API KEY INPUT ===== */
+    .api-key-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--canvas);
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .api-key-input:focus {
+      border-color: var(--blue);
+      outline: none;
+    }
   </style>
 </head>
 <body>
@@ -637,6 +653,12 @@
     <div id="tabPlans" class="tab-content active">
 
       <div class="glass-card">
+        <!-- ===== API KEY INPUT ===== -->
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:600;font-size:13px;color:var(--muted);">🔑 Gemini API Key</label>
+          <input type="text" id="apiKeyInput" class="api-key-input" placeholder="Paste your Gemini API key here">
+        </div>
+
         <div class="upload-zone" id="dropZone">
           <div class="upload-icon">📄</div>
           <strong>Drop your brief here</strong>
@@ -767,8 +789,8 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ================================================================
-// GEMINI API KEY// ================================================================
-const GEMINI_API_KEY = "AIzaSyCqNyud-n60uMC-tt8UZlA3Ow79NloWVCA";
+// GEMINI API - NOW READ FROM INPUT FIELD (NO HARDCODED KEY!)
+// ================================================================
 const MODEL = "gemini-3.6-flash";
 
 // ================================================================
@@ -806,7 +828,7 @@ function hideError() { $('#errorBox').style.display = 'none'; }
 function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
 // ================================================================
-// AUTH - LOGIN / LOGOUT
+// AUTH
 // ================================================================
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
@@ -821,9 +843,6 @@ function logout() {
   });
 }
 
-// ================================================================
-// AUTH STATE CHANGE
-// ================================================================
 auth.onAuthStateChanged(user => {
   if (user) {
     currentUser = user;
@@ -851,7 +870,7 @@ function generateRandomUsername(displayName) {
 }
 
 // ================================================================
-// USERNAME - CHECK AVAILABILITY (FIXED - NO INDEX NEEDED)
+// USERNAME - CHECK AVAILABILITY (NO INDEX NEEDED)
 // ================================================================
 function checkUsernameAvailability(username) {
   const statusEl = document.getElementById('usernameStatus');
@@ -882,7 +901,6 @@ function checkUsernameAvailability(username) {
   
   clearTimeout(usernameCheckTimeout);
   usernameCheckTimeout = setTimeout(() => {
-    // Get ALL users and check in memory (NO INDEX NEEDED)
     db.collection('users').get().then(snapshot => {
       let taken = false;
       const allUsernames = [];
@@ -1003,7 +1021,7 @@ function checkUsername(user) {
 }
 
 // ================================================================
-// LOAD USER'S PLANS FROM FIRESTORE
+// LOAD USER'S PLANS
 // ================================================================
 function loadUserPlans(uid) {
   db.collection('users').doc(uid).collection('plans')
@@ -1044,9 +1062,6 @@ function loadPlanFromFirestore(docId) {
   });
 }
 
-// ================================================================
-// SAVE PLAN TO FIRESTORE
-// ================================================================
 function savePlanToFirestore(fileName, data) {
   if (!currentUser) return;
   db.collection('users').doc(currentUser.uid).collection('plans').add({
@@ -1063,9 +1078,6 @@ function savePlanToFirestore(fileName, data) {
 // ================================================================
 // FRIEND SYSTEM
 // ================================================================
-// ================================================================
-// SEARCH USERS (FIXED - NO INDEX NEEDED)
-// ================================================================
 function searchUsers(query) {
   const results = document.getElementById('searchResults');
   if (!query || query.length < 2) {
@@ -1073,7 +1085,6 @@ function searchUsers(query) {
     return;
   }
   
-  // Get ALL users and filter in memory (NO INDEX NEEDED)
   db.collection('users').get().then(snapshot => {
     const users = [];
     snapshot.forEach(doc => {
@@ -1101,7 +1112,6 @@ function searchUsers(query) {
     });
     results.innerHTML = html;
     
-    // Check friend status for each result
     users.forEach(user => {
       if (user.uid !== currentUser.uid) {
         db.collection('users').doc(currentUser.uid).collection('friends').doc(user.uid).get().then(friendDoc => {
@@ -1196,9 +1206,6 @@ function rejectRequest(requestId) {
   });
 }
 
-// ================================================================
-// LOAD FRIENDS (FIXED - SHOWS USERNAMES)
-// ================================================================
 function loadFriends(uid) {
   db.collection('users').doc(uid).collection('friends').onSnapshot(snapshot => {
     const list = document.getElementById('friendsList');
@@ -1207,13 +1214,11 @@ function loadFriends(uid) {
       return;
     }
     
-    // Get all friend UIDs
     const friendUids = [];
     snapshot.forEach(doc => {
       friendUids.push(doc.data().uid);
     });
     
-    // Fetch usernames for all friends
     let html = '';
     let loaded = 0;
     friendUids.forEach(friendUid => {
@@ -1421,10 +1426,18 @@ function render(data) {
 }
 
 // ================================================================
-// GENERATE PLAN
+// GENERATE PLAN - FIXED: Reads API Key from Input Field
 // ================================================================
 async function generatePlan() {
   hideError();
+  
+  // Read API key from input field
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey) {
+    showError('Please paste your Gemini API key in the field above.');
+    return;
+  }
+  
   if (!selectedFile) {
     showError('Please upload a project brief.');
     return;
@@ -1459,8 +1472,9 @@ async function generatePlan() {
         "success_metrics": ["..."]
       }`;
 
+    // Use the API key from the input field
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
