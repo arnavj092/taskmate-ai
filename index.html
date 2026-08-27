@@ -17,7 +17,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   
   <style>
-    /* ===== ROOT VARIABLES ===== */
     :root {
       --blue: #0b57d0;
       --blue-light: #d3e3fd;
@@ -42,8 +41,6 @@
       --line: #2a2a4a;
       --shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
-    
-    /* ===== RESET & BASE ===== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       margin: 0;
@@ -52,11 +49,8 @@
       font: 15px/1.6 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       transition: background var(--transition), color var(--transition);
       min-height: 100vh;
-      -webkit-tap-highlight-color: transparent;
     }
     .shell { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-    
-    /* ===== HEADER ===== */
     header {
       padding: 16px 0;
       display: flex;
@@ -111,8 +105,6 @@
       border-radius: 99px;
       border: 1px solid var(--line);
     }
-    
-    /* ===== HERO ===== */
     .hero {
       padding: 40px 0 30px;
       text-align: center;
@@ -133,24 +125,9 @@
       0%, 100% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
     }
-    .hero h1 {
-      font-size: clamp(32px, 4.5vw, 50px);
-      letter-spacing: -2px;
-      line-height: 1.1;
-    }
-    .hero h1 span {
-      background: linear-gradient(135deg, #0b57d0, #4285f4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero p {
-      color: var(--muted);
-      font-size: 17px;
-      max-width: 560px;
-      margin: 8px auto 0;
-    }
-    
-    /* ===== CARDS ===== */
+    .hero h1 { font-size: clamp(32px, 4.5vw, 50px); letter-spacing: -2px; line-height: 1.1; }
+    .hero h1 span { background: linear-gradient(135deg, #0b57d0, #4285f4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 17px; max-width: 560px; margin: 8px auto 0; }
     .glass-card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -162,8 +139,6 @@
       margin-top: 24px;
     }
     .glass-card:hover { transform: translateY(-2px); box-shadow: 0 12px 48px rgba(11,87,208,0.12); }
-    
-    /* ===== UPLOAD ZONE ===== */
     .upload-zone {
       border: 2px dashed var(--line);
       border-radius: 16px;
@@ -185,8 +160,6 @@
       align-items: center;
       justify-content: space-between;
     }
-    
-    /* ===== BUTTONS ===== */
     .btn-primary {
       background: var(--blue);
       color: white;
@@ -199,11 +172,7 @@
       transition: var(--transition);
       box-shadow: 0 4px 16px rgba(11,87,208,0.3);
     }
-    .btn-primary:hover {
-      background: var(--blue-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(11,87,208,0.4);
-    }
+    .btn-primary:hover { background: var(--blue-dark); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(11,87,208,0.4); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .btn-secondary {
       background: var(--surface);
@@ -228,8 +197,6 @@
       transition: var(--transition);
     }
     .btn-sm:hover { background: var(--blue-light); border-color: var(--blue); }
-    
-    /* ===== DASHBOARD ===== */
     .dashboard { display: none; margin-top: 24px; animation: fadeSlideIn 0.6s ease; }
     @keyframes fadeSlideIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -246,8 +213,6 @@
     .dash-header h2 { font-size: 24px; letter-spacing: -1px; }
     .dash-header p { color: var(--muted); font-size: 14px; margin-top: 2px; }
     .dash-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    
-    /* ===== SUMMARY ===== */
     .summary-box {
       background: linear-gradient(135deg, var(--blue-light), var(--surface));
       padding: 20px;
@@ -271,8 +236,6 @@
     }
     .metric-item .value { font-size: 22px; font-weight: 700; color: var(--blue); }
     .metric-item .label { font-size: 11px; color: var(--muted); }
-    
-    /* ===== PROGRESS ===== */
     .progress-section {
       margin: 16px 0;
       padding: 16px 20px;
@@ -299,8 +262,6 @@
       border-radius: 99px;
       transition: width 0.6s ease;
     }
-    
-    /* ===== GRID ===== */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
     .panel {
@@ -311,8 +272,6 @@
       box-shadow: var(--shadow);
     }
     .panel h3 { margin-bottom: 12px; font-size: 15px; }
-    
-    /* ===== TASK ITEMS ===== */
     .task-item {
       display: grid;
       grid-template-columns: 28px 1fr auto auto;
@@ -378,8 +337,6 @@
       justify-content: space-between;
     }
     .comment-item small { color: var(--muted); font-size: 10px; }
-    
-    /* ===== ROLE ITEMS ===== */
     .role-item {
       border-left: 3px solid var(--blue);
       padding: 6px 0 6px 12px;
@@ -387,8 +344,6 @@
     }
     .role-item strong { font-size: 14px; }
     .role-item p { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    
-    /* ===== TIMELINE ===== */
     .timeline-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -403,8 +358,6 @@
     .week-box h4 { font-size: 13px; color: var(--blue); margin-bottom: 4px; }
     .week-box ul { list-style: none; padding: 0; }
     .week-box li { font-size: 12px; padding: 3px 0; border-top: 1px solid var(--line); }
-    
-    /* ===== SUGGESTIONS ===== */
     .suggestion-box {
       background: linear-gradient(135deg, #e6f4ea, #d3e3fd);
       padding: 14px 18px;
@@ -418,8 +371,6 @@
     .suggestion-box h4 { font-size: 14px; margin-bottom: 4px; }
     .suggestion-box ul { list-style: none; padding: 0; font-size: 13px; }
     .suggestion-box li { padding: 3px 0; }
-    
-    /* ===== ACTIVITY FEED ===== */
     .activity-section {
       background: var(--surface);
       border-radius: 16px;
@@ -435,8 +386,6 @@
       font-size: 13px;
     }
     .activity-item small { color: var(--muted); font-size: 11px; }
-    
-    /* ===== NOTIFICATIONS ===== */
     .notification-badge {
       background: var(--red);
       color: white;
@@ -470,8 +419,6 @@
       font-size: 13px;
     }
     .notification-item small { color: var(--muted); font-size: 11px; }
-    
-    /* ===== FRIENDS ===== */
     .friend-section {
       margin-top: 20px;
       padding: 18px;
@@ -529,8 +476,6 @@
       gap: 6px;
     }
     .friend-list-item small { color: var(--muted); }
-    
-    /* ===== HISTORY ===== */
     .history-section {
       margin-top: 20px;
       background: var(--surface);
@@ -550,8 +495,6 @@
       transition: var(--transition);
     }
     .history-item:hover { background: var(--canvas); border-color: var(--blue); }
-    
-    /* ===== TABS ===== */
     .nav-bar {
       display: flex;
       gap: 6px;
@@ -574,8 +517,6 @@
     .nav-bar button.active { background: var(--blue-light); color: var(--blue); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    
-    /* ===== LOGIN ===== */
     .login-screen {
       display: flex;
       flex-direction: column;
@@ -604,8 +545,6 @@
     }
     .login-btn:hover { transform: scale(1.05); box-shadow: 0 8px 32px rgba(66,133,244,0.4); }
     .login-logo { font-size: 56px; margin-bottom: 12px; }
-    
-    /* ===== USERNAME PROMPT ===== */
     .username-prompt {
       display: none;
       position: fixed;
@@ -688,8 +627,6 @@
       color: white;
     }
     .username-modal .btn-primary { width: 100%; margin-top: 12px; }
-    
-    /* ===== TOAST ===== */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -750,8 +687,6 @@
       border-top: 1px solid var(--line);
       margin-top: 32px;
     }
-    
-    /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 600px) {
       .shell { padding: 0 14px; }
       .glass-card { padding: 18px; }
@@ -818,7 +753,6 @@
   </div>
 </header>
 
-<!-- ===== NOTIFICATION PANEL ===== -->
 <div class="notification-panel" id="notificationPanel">
   <h4 style="margin-bottom:8px;font-size:15px;">🔔 Notifications</h4>
   <div id="notificationList"><p style="color:var(--muted);font-size:13px;">No notifications</p></div>
@@ -833,16 +767,12 @@
   </section>
 
   <div class="shell">
-
-    <!-- ===== TAB NAV ===== -->
     <div class="nav-bar">
       <button class="active" onclick="switchTab('plans')">📋 Plans</button>
       <button onclick="switchTab('friends')">👥 Friends <span id="requestsBadge" class="notification-badge" style="display:none;">0</span></button>
     </div>
 
-    <!-- ===== TAB 1: PLANS ===== -->
     <div id="tabPlans" class="tab-content active">
-
       <div class="glass-card">
         <div class="upload-zone" id="dropZone">
           <div class="upload-icon">📄</div>
@@ -898,7 +828,6 @@
           <div class="metric-grid" id="metricGrid"></div>
         </div>
 
-        <!-- ===== PROGRESS SECTION ===== -->
         <div class="progress-section">
           <div class="progress-header">
             <span>📈 Progress</span>
@@ -930,7 +859,6 @@
           <ul id="suggestionList"></ul>
         </div>
 
-        <!-- ===== ACTIVITY FEED ===== -->
         <div class="activity-section">
           <h4 style="font-size:15px;">🔄 Activity Feed</h4>
           <div id="activityFeed">
@@ -939,7 +867,6 @@
         </div>
       </div>
       
-      <!-- ===== HISTORY ===== -->
       <div class="history-section">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
           <h3 style="font-size:16px;">📜 My Plans</h3>
@@ -948,7 +875,6 @@
       </div>
     </div>
 
-    <!-- ===== TAB 2: FRIENDS ===== -->
     <div id="tabFriends" class="tab-content">
       <div class="friend-section">
         <h3>🔍 Find Friends</h3>
@@ -974,7 +900,6 @@
         <div id="friendsPlans"><p style="color:var(--muted);">Friend's plans will appear here</p></div>
       </div>
     </div>
-
   </div>
 </main>
 
@@ -994,13 +919,12 @@ const firebaseConfig = {
   appId: "1:182898886711:web:23ce065338cb50969697b2"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ================================================================
-// 🔐 LOGIN FUNCTION - FIXED
+// 🔐 LOGIN FUNCTION
 // ================================================================
 function loginWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
@@ -1078,6 +1002,22 @@ auth.onAuthStateChanged(user => {
     loadRequests(user.uid);
     loadFriends(user.uid);
     loadNotifications(user.uid);
+    
+    // 🔥 RESTORE SAVED STATE
+    const savedPlan = localStorage.getItem('taskmate_current_plan');
+    const savedFileName = localStorage.getItem('taskmate_current_filename');
+    const savedPlanId = localStorage.getItem('taskmate_current_plan_id');
+    if (savedPlan && savedFileName) {
+      try {
+        const plan = JSON.parse(savedPlan);
+        currentFileName = savedFileName;
+        currentPlanId = savedPlanId;
+        render(plan);
+        toast('📂 Restored your previous session');
+      } catch (e) {
+        console.log('Could not restore plan');
+      }
+    }
   } else {
     currentUser = null;
     document.getElementById('loginScreen').style.display = 'flex';
@@ -1584,9 +1524,16 @@ function setLoading(on) {
 }
 
 // ================================================================
-// 📊 RENDER PLAN
+// 📊 RENDER PLAN (WITH STATE PERSISTENCE)
 // ================================================================
 function render(data) {
+  // 💾 Save current state to localStorage
+  if (currentUser) {
+    localStorage.setItem('taskmate_current_plan', JSON.stringify(data));
+    localStorage.setItem('taskmate_current_filename', currentFileName || '');
+    localStorage.setItem('taskmate_current_plan_id', currentPlanId || '');
+  }
+  
   currentPlan = data;
   const tasks = data.tasks || [];
   const roles = data.team_roles || [];
@@ -1682,15 +1629,29 @@ function toggleComment(index) {
 
 function addComment(index) {
   const input = document.getElementById('commentInput_' + index);
+  if (!input) {
+    toast('Comment input not found');
+    return;
+  }
   const text = input.value.trim();
-  if (!text) return;
-  if (!currentPlan.tasks[index].comments) currentPlan.tasks[index].comments = [];
+  if (!text) {
+    toast('Please type a comment first');
+    return;
+  }
+  if (!currentPlan || !currentPlan.tasks || !currentPlan.tasks[index]) {
+    toast('Task not found');
+    return;
+  }
+  if (!currentPlan.tasks[index].comments) {
+    currentPlan.tasks[index].comments = [];
+  }
   currentPlan.tasks[index].comments.push({
     text: text,
     user: currentUsername || 'User',
     timestamp: new Date().toISOString()
   });
   input.value = '';
+  toast('💬 Comment added!');
   render(currentPlan);
 }
 
@@ -1754,6 +1715,7 @@ async function generatePlan() {
     });
 
     render(data);
+    addActivity('📝 Created plan: ' + currentFileName);
     toast('✅ Plan generated successfully!');
   } catch (err) {
     showError(err.message || 'Something went wrong. Try again.');
@@ -1843,6 +1805,7 @@ function downloadPDF() {
   });
   doc.save('project-plan.pdf');
   toast('📄 PDF downloaded');
+  addActivity('📄 Downloaded PDF');
 }
 
 function downloadTXT() {
@@ -1879,6 +1842,7 @@ function downloadTXT() {
   link.click();
   URL.revokeObjectURL(link.href);
   toast('📥 TXT downloaded');
+  addActivity('📥 Downloaded TXT');
 }
 
 function sharePlan() {
@@ -1886,6 +1850,7 @@ function sharePlan() {
   const encoded = btoa(JSON.stringify(currentPlan));
   const url = `${window.location.origin}${window.location.pathname}?plan=${encoded}`;
   navigator.clipboard.writeText(url).then(() => toast('🔗 Shareable link copied!'));
+  addActivity('🔗 Shared plan link');
 }
 
 // ================================================================
@@ -1922,6 +1887,9 @@ function celebrate() {
 function resetAll() {
   clearFile();
   $('#dashboard').style.display = 'none';
+  localStorage.removeItem('taskmate_current_plan');
+  localStorage.removeItem('taskmate_current_filename');
+  localStorage.removeItem('taskmate_current_plan_id');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
