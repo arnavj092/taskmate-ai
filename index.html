@@ -994,9 +994,26 @@ const firebaseConfig = {
   appId: "1:182898886711:web:23ce065338cb50969697b2"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ================================================================
+// 🔐 LOGIN FUNCTION - FIXED
+// ================================================================
+function loginWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then((result) => {
+      console.log('✅ Signed in:', result.user.displayName);
+      toast('✅ Welcome, ' + result.user.displayName + '!');
+    })
+    .catch((error) => {
+      console.error('❌ Login error:', error);
+      toast('❌ Login failed: ' + error.message);
+    });
+}
 
 // ================================================================
 // 🔑 GEMINI CONFIG
@@ -1015,7 +1032,6 @@ let currentUsername = null;
 let currentPlanId = null;
 let usernameAvailable = false;
 let usernameCheckTimeout = null;
-let activityInterval = null;
 
 // ================================================================
 // 🛠️ DOM HELPERS
@@ -1041,13 +1057,8 @@ function hideError() { $('#errorBox').style.display = 'none'; }
 function escape(s) { return String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
 // ================================================================
-// 🔐 AUTH
+// 🔐 AUTH STATE
 // ================================================================
-function loginWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(err => toast('❌ Login failed: ' + err.message));
-}
-
 function logout() {
   auth.signOut().then(() => {
     toast('👋 Logged out');
@@ -1067,7 +1078,6 @@ auth.onAuthStateChanged(user => {
     loadRequests(user.uid);
     loadFriends(user.uid);
     loadNotifications(user.uid);
-    startActivityListener(user.uid);
   } else {
     currentUser = null;
     document.getElementById('loginScreen').style.display = 'flex';
@@ -1191,7 +1201,6 @@ function setUsername() {
     document.getElementById('usernamePrompt').classList.remove('active');
     toast('✅ Welcome, @' + username + '!');
     loadUserPlans(currentUser.uid);
-    addActivity('👋 @' + username + ' joined TaskMate AI');
   }).catch(err => {
     errorEl.textContent = 'Error: ' + err.message;
     errorEl.style.display = 'block';
@@ -1224,35 +1233,10 @@ function addActivity(message) {
   item.innerHTML = `<span>${message}</span><small>${time}</small>`;
   feed.prepend(item);
   if (feed.children.length > 20) feed.removeChild(feed.lastChild);
-  // Save to Firestore
   db.collection('users').doc(currentUser.uid).collection('activity').add({
     message: message,
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
-}
-
-function startActivityListener(uid) {
-  if (activityInterval) clearInterval(activityInterval);
-  // Load recent activity
-  db.collection('users').doc(uid).collection('activity')
-    .orderBy('timestamp', 'desc')
-    .limit(10)
-    .onSnapshot(snapshot => {
-      const feed = document.getElementById('activityFeed');
-      feed.innerHTML = '';
-      if (snapshot.empty) {
-        feed.innerHTML = '<p style="color:var(--muted);font-size:13px;">No activity yet</p>';
-        return;
-      }
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const item = document.createElement('div');
-        item.className = 'activity-item';
-        const time = data.timestamp?.toDate?.() ? data.timestamp.toDate().toLocaleTimeString() : 'Just now';
-        item.innerHTML = `<span>${data.message || 'Activity'}</span><small>${time}</small>`;
-        feed.appendChild(item);
-      });
-    });
 }
 
 // ================================================================
@@ -1332,18 +1316,9 @@ function loadPlanFromFirestore(docId) {
       if (data) {
         render(data);
         toast('📂 Loaded from saved plans');
-        addActivity('📂 Loaded plan: ' + (doc.data().fileName || 'Untitled'));
       }
     }
   });
-  // Set up real-time listener for collaboration
-  db.collection('users').doc(uid).collection('plans').doc(docId)
-    .onSnapshot((snap) => {
-      if (snap.exists && snap.data().data) {
-        // Only re-render if we're not the one who made the change
-        render(snap.data().data);
-      }
-    });
 }
 
 function savePlanToFirestore(fileName, data) {
@@ -1356,7 +1331,6 @@ function savePlanToFirestore(fileName, data) {
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     loadUserPlans(currentUser.uid);
-    addActivity('📝 Created plan: ' + fileName);
   }).catch(err => console.error('Save error:', err));
 }
 
@@ -1462,7 +1436,6 @@ function acceptRequest(requestId, fromUid) {
   db.collection('friendRequests').doc(requestId).delete().then(() => {
     toast('✅ Friend added!');
     loadFriends(uid);
-    addActivity('👥 Became friends with @' + (currentUsername || 'someone'));
     sendNotification(fromUid, '@' + currentUsername + ' accepted your friend request');
   });
 }
@@ -1611,7 +1584,7 @@ function setLoading(on) {
 }
 
 // ================================================================
-// 📊 RENDER PLAN (UPDATED WITH PROGRESS, COMMENTS, COLLAB)
+// 📊 RENDER PLAN
 // ================================================================
 function render(data) {
   currentPlan = data;
@@ -1680,7 +1653,7 @@ function render(data) {
   setTimeout(() => $('#dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
   celebrate();
 
-  // Save to Firestore with real-time sync
+  // Save to Firestore
   if (currentUser && currentFileName) {
     const docRef = db.collection('users').doc(currentUser.uid).collection('plans').doc(currentPlanId);
     docRef.set({
@@ -1694,13 +1667,12 @@ function render(data) {
 }
 
 // ================================================================
-// ✅ TASK FUNCTIONS (Progress + Comments)
+// ✅ TASK FUNCTIONS
 // ================================================================
 function toggleTask(index, checked) {
   if (!currentPlan || !currentPlan.tasks) return;
   currentPlan.tasks[index].completed = checked;
   render(currentPlan);
-  addActivity((checked ? '✅ Completed' : '↩️ Uncompleted') + ' task: ' + (currentPlan.tasks[index].name || ''));
 }
 
 function toggleComment(index) {
@@ -1720,11 +1692,10 @@ function addComment(index) {
   });
   input.value = '';
   render(currentPlan);
-  addActivity('💬 Commented on task: ' + (currentPlan.tasks[index].name || ''));
 }
 
 // ================================================================
-# 🚀 GENERATE PLAN
+// 🚀 GENERATE PLAN
 // ================================================================
 async function generatePlan() {
   hideError();
@@ -1761,7 +1732,6 @@ async function generatePlan() {
         "success_metrics": ["..."]
       }`;
 
-    // Ensure tasks have completed and comments fields
     const res = await fetch(`${BACKEND_URL}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1771,12 +1741,10 @@ async function generatePlan() {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Server error');
 
-    // Add completed and comments to tasks
     if (data.tasks) {
       data.tasks = data.tasks.map(t => ({ ...t, completed: false, comments: [] }));
     }
 
-    // Create a new Firestore document for this plan
     const docRef = db.collection('users').doc(currentUser.uid).collection('plans').doc();
     currentPlanId = docRef.id;
     await docRef.set({
@@ -1786,7 +1754,6 @@ async function generatePlan() {
     });
 
     render(data);
-    addActivity('📝 Created plan: ' + currentFileName);
     toast('✅ Plan generated successfully!');
   } catch (err) {
     showError(err.message || 'Something went wrong. Try again.');
@@ -1798,7 +1765,7 @@ async function generatePlan() {
 $('#generateBtn').addEventListener('click', generatePlan);
 
 // ================================================================
-# 📄 SAMPLE PLAN
+// 📄 SAMPLE PLAN
 // ================================================================
 function loadSample() {
   const sample = {
@@ -1825,7 +1792,6 @@ function loadSample() {
     success_metrics: ["100 students reached", "10 workshop attendees"]
   };
   currentFileName = 'sample-brief';
-  // Create a new Firestore document for sample
   const docRef = db.collection('users').doc(currentUser.uid).collection('plans').doc();
   currentPlanId = docRef.id;
   docRef.set({
@@ -1834,12 +1800,11 @@ function loadSample() {
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
   render(sample);
-  addActivity('🔍 Previewed sample plan');
   toast('🔍 Sample plan loaded');
 }
 
 // ================================================================
-# 📥 EXPORT FUNCTIONS
+// 📥 EXPORT FUNCTIONS
 // ================================================================
 function downloadPDF() {
   if (!currentPlan) { toast('⚠️ Generate a plan first'); return; }
@@ -1878,7 +1843,6 @@ function downloadPDF() {
   });
   doc.save('project-plan.pdf');
   toast('📄 PDF downloaded');
-  addActivity('📄 Downloaded PDF');
 }
 
 function downloadTXT() {
@@ -1915,7 +1879,6 @@ function downloadTXT() {
   link.click();
   URL.revokeObjectURL(link.href);
   toast('📥 TXT downloaded');
-  addActivity('📥 Downloaded TXT');
 }
 
 function sharePlan() {
@@ -1923,11 +1886,10 @@ function sharePlan() {
   const encoded = btoa(JSON.stringify(currentPlan));
   const url = `${window.location.origin}${window.location.pathname}?plan=${encoded}`;
   navigator.clipboard.writeText(url).then(() => toast('🔗 Shareable link copied!'));
-  addActivity('🔗 Shared plan link');
 }
 
 // ================================================================
-# 🌓 THEME
+// 🌓 THEME
 // ================================================================
 function toggleTheme() {
   const html = document.documentElement;
@@ -1938,7 +1900,7 @@ function toggleTheme() {
 }
 
 // ================================================================
-# 🎉 CONFETTI
+// 🎉 CONFETTI
 // ================================================================
 function celebrate() {
   const colors = ['#4285f4', '#ea4335', '#fbbc04', '#34a853', '#a142f4'];
@@ -1955,7 +1917,7 @@ function celebrate() {
 }
 
 // ================================================================
-# 🔄 RESET
+// 🔄 RESET
 // ================================================================
 function resetAll() {
   clearFile();
@@ -1964,7 +1926,7 @@ function resetAll() {
 }
 
 // ================================================================
-# 🚀 INIT
+// 🚀 INIT
 // ================================================================
 const savedTheme = localStorage.getItem('taskmate-theme');
 if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
